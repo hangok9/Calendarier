@@ -1,16 +1,37 @@
 import { NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
-import { requireSession } from "@/lib/auth"
+import { getSession } from "@/lib/auth"
 
 export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ slug: string; id: string }> }
 ) {
   try {
-    const session = await requireSession()
+    const session = await getSession()
+    if (!session) {
+      return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+    }
+
     const { slug, id } = await params
 
-    if (session.slug !== slug) {
+    const { data: calendar } = await supabase
+      .from("calendars")
+      .select("id")
+      .eq("slug", slug)
+      .single()
+
+    if (!calendar) {
+      return NextResponse.json({ error: "Calendario no encontrado" }, { status: 404 })
+    }
+
+    const { data: person } = await supabase
+      .from("people")
+      .select("id")
+      .eq("calendar_id", calendar.id)
+      .eq("user_id", session.user_id)
+      .maybeSingle()
+
+    if (!person) {
       return NextResponse.json({ error: "No autorizado" }, { status: 403 })
     }
 
@@ -18,7 +39,7 @@ export async function DELETE(
       .from("custom_events")
       .delete()
       .eq("id", id)
-      .eq("calendar_id", session.calendar_id)
+      .eq("calendar_id", calendar.id)
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })

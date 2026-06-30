@@ -9,27 +9,37 @@ export async function GET() {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 })
     }
 
-    const { data: calendar } = await supabase
-      .from("calendars")
-      .select("id, slug, name, year, months")
-      .eq("id", session.calendar_id)
+    const { data: user } = await supabase
+      .from("users")
+      .select("id, username, email")
+      .eq("id", session.user_id)
       .single()
 
-    const { data: person } = await supabase
+    // Get user's calendars via people
+    const { data: memberships } = await supabase
       .from("people")
-      .select("id, name")
-      .eq("id", session.person_id)
-      .single()
+      .select("calendar_id, calendars!inner(id, slug, name)")
+      .eq("user_id", session.user_id)
+      .order("calendars(name)")
+
+    const calendars = memberships?.map((m: any) => ({
+      id: m.calendars.id,
+      slug: m.calendars.slug,
+      name: m.calendars.name,
+    })) || []
+
+    // Deduplicate calendars (user might be in same calendar with multiple entries)
+    const uniqueCalendars = calendars.filter(
+      (cal, i, arr) => arr.findIndex((c) => c.id === cal.id) === i
+    )
 
     return NextResponse.json({
       session: {
-        calendar_id: session.calendar_id,
-        person_id: session.person_id,
-        slug: session.slug,
-        name: session.name,
+        user_id: session.user_id,
+        username: session.username,
       },
-      calendar,
-      person,
+      user,
+      calendars: uniqueCalendars,
     })
   } catch {
     return NextResponse.json({ error: "Error interno" }, { status: 500 })

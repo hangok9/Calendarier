@@ -1,16 +1,37 @@
 import { NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
-import { requireSession } from "@/lib/auth"
+import { getSession } from "@/lib/auth"
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const session = await requireSession()
+    const session = await getSession()
+    if (!session) {
+      return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+    }
+
     const { slug } = await params
 
-    if (session.slug !== slug) {
+    const { data: calendar } = await supabase
+      .from("calendars")
+      .select("id")
+      .eq("slug", slug)
+      .single()
+
+    if (!calendar) {
+      return NextResponse.json({ error: "Calendario no encontrado" }, { status: 404 })
+    }
+
+    const { data: person } = await supabase
+      .from("people")
+      .select("id")
+      .eq("calendar_id", calendar.id)
+      .eq("user_id", session.user_id)
+      .maybeSingle()
+
+    if (!person) {
       return NextResponse.json({ error: "No autorizado" }, { status: 403 })
     }
 
@@ -23,6 +44,10 @@ export async function POST(
       )
     }
 
+    if (person_id !== person.id) {
+      return NextResponse.json({ error: "No autorizado" }, { status: 403 })
+    }
+
     const start = new Date(start_date)
     const end = new Date(end_date)
     const dates: string[] = []
@@ -32,7 +57,7 @@ export async function POST(
     }
 
     const inserts = dates.map((date) => ({
-      calendar_id: session.calendar_id,
+      calendar_id: calendar.id,
       person_id,
       date,
       code: code || null,

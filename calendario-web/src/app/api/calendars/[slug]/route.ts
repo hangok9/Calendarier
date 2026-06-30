@@ -1,18 +1,18 @@
 import { NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
-import { requireSession } from "@/lib/auth"
+import { getSession } from "@/lib/auth"
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const session = await requireSession()
-    const { slug } = await params
-
-    if (session.slug !== slug) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 403 })
+    const session = await getSession()
+    if (!session) {
+      return NextResponse.json({ error: "No autorizado" }, { status: 401 })
     }
+
+    const { slug } = await params
 
     const { data: calendar, error: calError } = await supabase
       .from("calendars")
@@ -35,11 +35,23 @@ export async function GET(
       .select("*")
       .eq("calendar_id", calendar.id)
 
-    return NextResponse.json({ calendar, people, availability })
-  } catch (error: any) {
-    if (error.message === "No autorizado") {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+    // Find current user's person entry in this calendar
+    const currentPerson = people?.find((p) => p.user_id === session.user_id)
+
+    if (!currentPerson) {
+      return NextResponse.json(
+        { error: "No eres miembro de este calendario" },
+        { status: 403 }
+      )
     }
+
+    return NextResponse.json({
+      calendar,
+      people,
+      availability,
+      person_id: currentPerson.id,
+    })
+  } catch {
     return NextResponse.json({ error: "Error interno" }, { status: 500 })
   }
 }

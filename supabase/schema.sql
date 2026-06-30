@@ -1,38 +1,42 @@
 -- ============================================================
--- CALENDARIER - Esquema de Base de Datos
+-- CALENDARIER - Esquema Completo + Seed
 -- ============================================================
 -- 1. Ejecuta esto en SQL Editor de Supabase
--- 2. Luego ejecuta seed.sql (abajo) para los datos iniciales
+-- 2. Todo incluido: tablas + seed data
 -- ============================================================
 
--- Extensions
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 -- ============================================================
 -- TABLAS
 -- ============================================================
 
--- Cada calendario = un grupo (Barcelona, Cachorritas, Grupo...)
+CREATE TABLE users (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  username    TEXT UNIQUE NOT NULL,
+  email       TEXT,
+  password    TEXT NOT NULL,
+  created_at  TIMESTAMPTZ DEFAULT now()
+);
+
 CREATE TABLE calendars (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   slug        TEXT UNIQUE NOT NULL,
   name        TEXT NOT NULL,
-  password    TEXT NOT NULL,              -- bcrypt hash
   year        INT NOT NULL DEFAULT 2026,
   months      INT[] NOT NULL DEFAULT '{7,8}',
   created_at  TIMESTAMPTZ DEFAULT now()
 );
 
--- Personas de cada calendario
 CREATE TABLE people (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   calendar_id UUID NOT NULL REFERENCES calendars(id) ON DELETE CASCADE,
   name        TEXT NOT NULL,
   sort_order  INT NOT NULL DEFAULT 0,
+  user_id     UUID REFERENCES users(id),
   UNIQUE(calendar_id, name)
 );
 
--- Disponibilidad: code o NULL (= libre)
 CREATE TABLE availability (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   calendar_id UUID NOT NULL REFERENCES calendars(id) ON DELETE CASCADE,
@@ -43,7 +47,6 @@ CREATE TABLE availability (
   UNIQUE(person_id, date)
 );
 
--- Eventos personalizados (horarios flexibles)
 CREATE TABLE custom_events (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   calendar_id UUID NOT NULL REFERENCES calendars(id) ON DELETE CASCADE,
@@ -56,7 +59,6 @@ CREATE TABLE custom_events (
   created_at  TIMESTAMPTZ DEFAULT now()
 );
 
--- Planes de grupo
 CREATE TABLE group_plans (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   calendar_id UUID NOT NULL REFERENCES calendars(id) ON DELETE CASCADE,
@@ -68,7 +70,6 @@ CREATE TABLE group_plans (
   created_at  TIMESTAMPTZ DEFAULT now()
 );
 
--- Respuestas a planes
 CREATE TABLE plan_responses (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   plan_id     UUID NOT NULL REFERENCES group_plans(id) ON DELETE CASCADE,
@@ -96,35 +97,87 @@ CREATE INDEX idx_people_calendar_order
   ON people(calendar_id, sort_order);
 
 -- ============================================================
--- SEED DATA
+-- SEED: Calendarios
 -- ============================================================
 
--- Contrasenas temporales (cambiar luego desde el panel):
---   grupo -> grupo2026
---   barcelona -> barna2026
---   cachorritas -> cachos2026
---
--- NOTA: Los hash de abajo son placeholder.
--- Cuando el backend arranque, usa el endpoint
--- POST /api/admin/seed para generar las contrasenas reales.
--- O ejecuta UPDATE directo en Supabase.
+INSERT INTO calendars (slug, name, year, months) VALUES
+  ('grupo',       'Grupo',       2026, '{7,8}'),
+  ('barcelona',   'Barcelona',   2026, '{7,8}'),
+  ('cachorritas', 'Cachorritas', 2026, '{7,8}');
 
-INSERT INTO calendars (slug, name, password, year, months) VALUES
-  ('grupo',       'Grupo',       '$2b$10$ec0yf891SF6icTpcu1ORu.J.Ri3Q4h06LY1b2agSuDLPyYTgk4iJG', 2026, '{7,8}'),
-  ('barcelona',   'Barcelona',   '$2b$10$87QVsQfAMrkA0EtJvLvkeeih08YzMmDH6GeT8PQX/pNnnI5dxRANi', 2026, '{7,8}'),
-  ('cachorritas', 'Cachorritas', '$2b$10$VUFPgYxJyzbiWByYP9eSsudjtvLhNmkpythRjMdhdKl2JLQkWriXy', 2026, '{7,8}');
+-- ============================================================
+-- SEED: Usuarios (contrasena = nombre + 2026)
+-- ============================================================
+
+INSERT INTO users (username, password) VALUES
+  ('elias',    '$2b$10$adJBKYfkLn4zLkckUHxYl.bsQY3Y4AImQbIrU/kqyqNQNJBcWCnG2'),
+  ('merino',   '$2b$10$RYZEBWdEOXSkgjzJZcYXpOtXYXRQTOm73yJ/MPE5oy18/dR7frxLa'),
+  ('ponsa',    '$2b$10$nxNgti9X0hk1KxMeKedRnunJTUWOr7KB0rBYAFX6nuMLnTRu/WRHu'),
+  ('ferran',   '$2b$10$E4cLTJ2i2FRKzWPUgLbHreMgJreKvdgzsfo39ss7u9WqyYvG1jac2'),
+  ('august',   '$2b$10$977V0ZN5u920Xx1/GxajF.jQf43XBFWlz5Mgjtt7KYMUa7Q4HufXW'),
+  ('joan',     '$2b$10$qldyIN4g.um1c8Nx81zRT.KXmZ7lGXGwKrkWgJxFKGo1qLZepLi12'),
+  ('grau',     '$2b$10$coCNqJm/UItPFECbyt4a0O0vmUZ91SGyxcRo4Gkwz3xFxbGGgc0um'),
+  ('pol',      '$2b$10$Ohe/ojiYaw8pJXBuCu6Q5e6SMksWkrssT5ccroiPkUtv1Zsf7RIQi'),
+  ('resi',     '$2b$10$KXKFjeDgOnLGfj.p5e7fWOXDZ9fuSn6Af9taj8pKEjcyW9je5TOfm'),
+  ('oscar',    '$2b$10$3ni81M6C23MNVKKGglwioe2MZr7n1iSt91XUq/6X3hrLsBSGpwFki'),
+  ('clara',    '$2b$10$0oEVVHlz8amCc2onWu9uTeFXouqlapf0ccim5wDF7O1qF9n7vubFG'),
+  ('anna',     '$2b$10$2GiN.wC8AlJX56J3pjZm6OTBzUeGO9ggz1nAHcR5/WLGzqpOWpa2K'),
+  ('pepe',     '$2b$10$AraOqdjn/xfMM7qttAu1xeF4q4lsXHLgP/TTxY207xbuH06LQ9/6q'),
+  ('ivan',     '$2b$10$fMZGDb1KH03qsR7clxN8oOTmflSrcdQTsDmfx4feUkgG3Y4aUvyJK'),
+  ('yeray',    '$2b$10$YF0xe/6Wql/vua6AAHqIpeyujLkmHP3c7/iCgNznw0NE04GH9oEVC'),
+  ('susanna',  '$2b$10$F.tyCY1XuoGYWBqPCVNIAewzJK8t.DlFzMHorB3DgUs4o.Jhw/Gmy'),
+  ('zua',      '$2b$10$aeOqYi7zGHar00iHtF1K8.Cfpv324SeZwjC7BfRHBjHj87ap.xaGW'),
+  ('anto',     '$2b$10$brZQbe61iPRP7cNtA.VfBuNyzryFRY.4jDZ2JHLY1Hdl4SXZbS.yu'),
+  ('cris',     '$2b$10$JyVse1X.iakmKNheIRcNTevt6WC1ljrjmt2TUUtWxPllq9wIh9IKG');
+
+-- ============================================================
+-- SEED: Personas (vinculadas a usuarios)
+-- ============================================================
 
 -- Grupo
-INSERT INTO people (calendar_id, name, sort_order)
-SELECT id, unnest(ARRAY['ELIAS','MERINO','PONSA','FERRAN','AUGUST','JOAN','GRAU','POL']), generate_series(0,7)
-FROM calendars WHERE slug = 'grupo';
+INSERT INTO people (calendar_id, name, sort_order, user_id)
+SELECT c.id, name, sort_order, u.id
+FROM (VALUES
+  ('ELIAS', 0, 'elias'),
+  ('MERINO', 1, 'merino'),
+  ('PONSA', 2, 'ponsa'),
+  ('FERRAN', 3, 'ferran'),
+  ('AUGUST', 4, 'august'),
+  ('JOAN', 5, 'joan'),
+  ('GRAU', 6, 'grau'),
+  ('POL', 7, 'pol')
+) AS p(name, sort_order, username)
+CROSS JOIN calendars c
+LEFT JOIN users u ON u.username = p.username
+WHERE c.slug = 'grupo';
 
 -- Barcelona
-INSERT INTO people (calendar_id, name, sort_order)
-SELECT id, unnest(ARRAY['RESI','OSCAR','CLARA','ANNA','PEPE','IVAN','YERAY']), generate_series(0,6)
-FROM calendars WHERE slug = 'barcelona';
+INSERT INTO people (calendar_id, name, sort_order, user_id)
+SELECT c.id, name, sort_order, u.id
+FROM (VALUES
+  ('RESI', 0, 'resi'),
+  ('OSCAR', 1, 'oscar'),
+  ('CLARA', 2, 'clara'),
+  ('ANNA', 3, 'anna'),
+  ('PEPE', 4, 'pepe'),
+  ('IVAN', 5, 'ivan'),
+  ('YERAY', 6, 'yeray')
+) AS p(name, sort_order, username)
+CROSS JOIN calendars c
+LEFT JOIN users u ON u.username = p.username
+WHERE c.slug = 'barcelona';
 
 -- Cachorritas
-INSERT INTO people (calendar_id, name, sort_order)
-SELECT id, unnest(ARRAY['SUSANNA','ZUA','PEPE','ANTO','ELIAS','CRIS']), generate_series(0,5)
-FROM calendars WHERE slug = 'cachorritas';
+INSERT INTO people (calendar_id, name, sort_order, user_id)
+SELECT c.id, name, sort_order, u.id
+FROM (VALUES
+  ('SUSANNA', 0, 'susanna'),
+  ('ZUA', 1, 'zua'),
+  ('PEPE', 2, 'pepe'),
+  ('ANTO', 3, 'anto'),
+  ('ELIAS', 4, 'elias'),
+  ('CRIS', 5, 'cris')
+) AS p(name, sort_order, username)
+CROSS JOIN calendars c
+LEFT JOIN users u ON u.username = p.username
+WHERE c.slug = 'cachorritas';

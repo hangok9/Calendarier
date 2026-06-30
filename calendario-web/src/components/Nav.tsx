@@ -1,5 +1,6 @@
 "use client"
 
+import { useRouter } from "next/navigation"
 import type { ViewType } from "@/types"
 
 const navItems: { id: ViewType; label: string; icon: string }[] = [
@@ -23,6 +24,8 @@ export default function Nav({
   personName: string
   onLogout: () => void
 }) {
+  const router = useRouter()
+
   return (
     <>
       {/* Desktop nav */}
@@ -42,12 +45,8 @@ export default function Nav({
         >
           <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
             <a
-              href="/"
+              href="/dashboard"
               className="nav-logo"
-              onClick={(e) => {
-                e.preventDefault()
-                onNavigate("setup")
-              }}
             >
               Calenadarier
             </a>
@@ -89,6 +88,20 @@ export default function Nav({
                 margin: "0 0.5rem",
               }}
             />
+            <button onClick={() => router.push("/dashboard")} className="btn-ghost" style={{ fontSize: "0.8125rem", padding: "0.5rem 0.75rem", background: "none", cursor: "pointer", fontFamily: "var(--font-sans)" }}>
+              Dashboard
+            </button>
+            <button onClick={() => router.push("/account")} className="btn-ghost" style={{ fontSize: "0.8125rem", padding: "0.5rem 0.75rem", background: "none", cursor: "pointer", fontFamily: "var(--font-sans)" }}>
+              Cuenta
+            </button>
+            <div
+              style={{
+                width: "1px",
+                height: "1.5rem",
+                background: "var(--border)",
+                margin: "0 0.5rem",
+              }}
+            />
             <button onClick={onLogout} className="btn-ghost" style={{ fontSize: "0.8125rem", padding: "0.5rem 0.75rem", background: "none", cursor: "pointer", fontFamily: "var(--font-sans)" }}>
               Salir
             </button>
@@ -113,6 +126,28 @@ export default function Nav({
               <span>{item.label}</span>
             </a>
           ))}
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault()
+              router.push("/dashboard")
+            }}
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "0.125rem",
+              padding: "0.375rem 0.75rem",
+              fontSize: "0.625rem",
+              fontWeight: 500,
+              color: "var(--text-muted)",
+              textDecoration: "none",
+              borderRadius: "var(--radius)",
+            }}
+          >
+            <span className="nav-icon">📊</span>
+            <span>Dashboard</span>
+          </a>
           <a
             href="#"
             onClick={(e) => {

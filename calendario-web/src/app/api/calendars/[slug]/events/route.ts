@@ -1,25 +1,46 @@
 import { NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
-import { requireSession } from "@/lib/auth"
+import { getSession } from "@/lib/auth"
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const session = await requireSession()
+    const session = await getSession()
+    if (!session) {
+      return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+    }
+
     const { slug } = await params
     const { searchParams } = new URL(request.url)
     const date = searchParams.get("date")
 
-    if (session.slug !== slug) {
+    const { data: calendar } = await supabase
+      .from("calendars")
+      .select("id")
+      .eq("slug", slug)
+      .single()
+
+    if (!calendar) {
+      return NextResponse.json({ error: "Calendario no encontrado" }, { status: 404 })
+    }
+
+    const { data: person } = await supabase
+      .from("people")
+      .select("id")
+      .eq("calendar_id", calendar.id)
+      .eq("user_id", session.user_id)
+      .maybeSingle()
+
+    if (!person) {
       return NextResponse.json({ error: "No autorizado" }, { status: 403 })
     }
 
     let query = supabase
       .from("custom_events")
       .select("*, people!inner(name)")
-      .eq("calendar_id", session.calendar_id)
+      .eq("calendar_id", calendar.id)
 
     if (date) {
       query = query.eq("date", date)
@@ -45,10 +66,31 @@ export async function POST(
   { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const session = await requireSession()
+    const session = await getSession()
+    if (!session) {
+      return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+    }
+
     const { slug } = await params
 
-    if (session.slug !== slug) {
+    const { data: calendar } = await supabase
+      .from("calendars")
+      .select("id")
+      .eq("slug", slug)
+      .single()
+
+    if (!calendar) {
+      return NextResponse.json({ error: "Calendario no encontrado" }, { status: 404 })
+    }
+
+    const { data: person } = await supabase
+      .from("people")
+      .select("id")
+      .eq("calendar_id", calendar.id)
+      .eq("user_id", session.user_id)
+      .maybeSingle()
+
+    if (!person) {
       return NextResponse.json({ error: "No autorizado" }, { status: 403 })
     }
 
@@ -65,7 +107,7 @@ export async function POST(
     const { data, error } = await supabase
       .from("custom_events")
       .insert({
-        calendar_id: session.calendar_id,
+        calendar_id: calendar.id,
         person_id,
         date,
         start_time: start_time || null,

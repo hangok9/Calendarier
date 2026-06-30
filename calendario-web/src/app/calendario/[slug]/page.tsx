@@ -21,6 +21,7 @@ export default function CalendarPage() {
   const [calendar, setCalendar] = useState<Calendar | null>(null)
   const [people, setPeople] = useState<Person[]>([])
   const [availability, setAvailability] = useState<Availability[]>([])
+  const [personId, setPersonId] = useState<string | null>(null)
   const [currentView, setCurrentView] = useState<ViewType>("calendario")
   const [loading, setLoading] = useState(true)
 
@@ -29,7 +30,7 @@ export default function CalendarPage() {
       .then((r) => r.json())
       .then((data) => {
         if (data.error) {
-          router.push(`/login?slug=${slug}`)
+          router.push(`/`)
           return
         }
         setSession(data.session)
@@ -41,9 +42,10 @@ export default function CalendarPage() {
           setCalendar(data.calendar)
           setPeople(data.people || [])
           setAvailability(data.availability || [])
+          setPersonId(data.person_id || null)
         }
       })
-      .catch(() => router.push(`/login?slug=${slug}`))
+      .catch(() => router.push(`/`))
       .finally(() => setLoading(false))
   }, [slug, router])
 
@@ -64,6 +66,9 @@ export default function CalendarPage() {
 
   if (!session || !calendar) return null
 
+  const currentPerson = people.find((p) => p.id === personId)
+  const personName = currentPerson?.name || session.username
+
   const totalDays = calendar.months.reduce((sum, m) => {
     return sum + new Date(calendar.year, m, 0).getDate()
   }, 0)
@@ -78,7 +83,7 @@ export default function CalendarPage() {
         currentView={currentView}
         onNavigate={setCurrentView}
         calendarName={calendar.name}
-        personName={session.name}
+        personName={personName}
         onLogout={handleLogout}
       />
 
@@ -92,7 +97,7 @@ export default function CalendarPage() {
             calendar={calendar}
             people={people}
             availability={availability}
-            session={session}
+            session={personId ? { ...session, person_id: personId } : session}
             onAvailabilityChange={(newAvail) => setAvailability(newAvail)}
           />
         </div>
@@ -107,11 +112,11 @@ export default function CalendarPage() {
         </div>
 
         <div className={`view ${currentView === "planes" ? "active" : ""}`}>
-          <PlanesView calendar={calendar} session={session} />
+          <PlanesView calendar={calendar} session={personId ? { ...session, person_id: personId } : session} />
         </div>
 
         <div className={`view ${currentView === "eventos" ? "active" : ""}`}>
-          <EventosView calendar={calendar} people={people} session={session} />
+          <EventosView calendar={calendar} people={people} session={personId ? { ...session, person_id: personId } : session} />
         </div>
       </main>
     </>

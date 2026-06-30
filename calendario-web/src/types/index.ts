@@ -14,6 +14,13 @@ export interface Person {
   sort_order: number
 }
 
+export interface User {
+  id: string
+  username: string
+  email: string | null
+  created_at: string
+}
+
 export interface Availability {
   id: string
   calendar_id: string
@@ -64,10 +71,8 @@ export interface CalendarData {
 }
 
 export interface SessionPayload {
-  calendar_id: string
-  person_id: string
-  slug: string
-  name: string
+  user_id: string
+  username: string
 }
 
 export type ViewType = "setup" | "calendario" | "resumen" | "planes" | "eventos"

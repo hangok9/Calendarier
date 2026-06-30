@@ -5,32 +5,31 @@ import { createSession } from "@/lib/auth"
 
 export async function POST(request: Request) {
   try {
-    const { slug, name, password } = await request.json()
+    const { username, password } = await request.json()
 
-    if (!slug || !name || !password) {
+    if (!username || !password) {
       return NextResponse.json(
-        { error: "slug, name y password son requeridos" },
+        { error: "Usuario y contrasena son requeridos" },
         { status: 400 }
       )
     }
 
-    const nameUpper = name.toUpperCase().trim()
-    const slugLower = slug.toLowerCase().trim()
+    const usernameLower = username.toLowerCase().trim()
 
-    const { data: calendar, error: calError } = await supabase
-      .from("calendars")
+    const { data: user, error: userError } = await supabase
+      .from("users")
       .select("*")
-      .eq("slug", slugLower)
+      .eq("username", usernameLower)
       .single()
 
-    if (calError || !calendar) {
+    if (userError || !user) {
       return NextResponse.json(
-        { error: "Calendario no encontrado" },
+        { error: "Usuario no encontrado" },
         { status: 404 }
       )
     }
 
-    const valid = await bcrypt.compare(password, calendar.password)
+    const valid = await bcrypt.compare(password, user.password)
     if (!valid) {
       return NextResponse.json(
         { error: "Contrasena incorrecta" },
@@ -38,31 +37,14 @@ export async function POST(request: Request) {
       )
     }
 
-    const { data: person } = await supabase
-      .from("people")
-      .select("*")
-      .eq("calendar_id", calendar.id)
-      .eq("name", nameUpper)
-      .maybeSingle()
-
-    if (!person) {
-      return NextResponse.json(
-        { error: "Persona no encontrada en este calendario" },
-        { status: 404 }
-      )
-    }
-
     await createSession({
-      calendar_id: calendar.id,
-      person_id: person.id,
-      slug: calendar.slug,
-      name: person.name,
+      user_id: user.id,
+      username: user.username,
     })
 
     return NextResponse.json({
       success: true,
-      person: { id: person.id, name: person.name },
-      calendar: { id: calendar.id, slug: calendar.slug, name: calendar.name },
+      user: { id: user.id, username: user.username, email: user.email },
     })
   } catch (error) {
     console.error("Login error:", error)

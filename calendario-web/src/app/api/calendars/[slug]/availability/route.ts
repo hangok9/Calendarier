@@ -1,16 +1,37 @@
 import { NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
-import { requireSession } from "@/lib/auth"
+import { getSession } from "@/lib/auth"
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const session = await requireSession()
+    const session = await getSession()
+    if (!session) {
+      return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+    }
+
     const { slug } = await params
 
-    if (session.slug !== slug) {
+    const { data: calendar } = await supabase
+      .from("calendars")
+      .select("id")
+      .eq("slug", slug)
+      .single()
+
+    if (!calendar) {
+      return NextResponse.json({ error: "Calendario no encontrado" }, { status: 404 })
+    }
+
+    const { data: person } = await supabase
+      .from("people")
+      .select("id")
+      .eq("calendar_id", calendar.id)
+      .eq("user_id", session.user_id)
+      .maybeSingle()
+
+    if (!person) {
       return NextResponse.json({ error: "No autorizado" }, { status: 403 })
     }
 
@@ -21,6 +42,11 @@ export async function POST(
         { error: "person_id y date son requeridos" },
         { status: 400 }
       )
+    }
+
+    // Verify person_id belongs to this user
+    if (person_id !== person.id) {
+      return NextResponse.json({ error: "No autorizado" }, { status: 403 })
     }
 
     const { data: existing } = await supabase
@@ -37,7 +63,7 @@ export async function POST(
         .eq("id", existing.id)
     } else {
       await supabase.from("availability").insert({
-        calendar_id: session.calendar_id,
+        calendar_id: calendar.id,
         person_id,
         date,
         code: code || null,
