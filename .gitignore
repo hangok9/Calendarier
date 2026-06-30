@@ -1,0 +1,30 @@
+# python
+__pycache__/
+*.pyc
+
+# dependencies
+calendario-web/node_modules
+node_modules
+
+# env
+.env
+.env.local
+.env.*.local
+
+# next.js
+calendario-web/.next
+.next
+out
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# project specific
+datos/
