@@ -18,11 +18,13 @@ export default function BatchModal({
   onComplete: () => void
 }) {
   const [personId, setPersonId] = useState(session.person_id)
+  const LIBRE = "__libre__"
   const [code, setCode] = useState<string>(CODES[0])
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<string | null>(null)
+  const isClear = code === LIBRE
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -34,13 +36,13 @@ export default function BatchModal({
       const res = await fetch(`/api/calendars/${calendar.slug}/batch`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ person_id: personId, code, start_date: startDate, end_date: endDate }),
+        body: JSON.stringify({ person_id: personId, code: isClear ? null : code, start_date: startDate, end_date: endDate }),
       })
 
       const data = await res.json()
 
       if (res.ok) {
-        setResult(`Actualizados ${data.updated} dias como ${code}`)
+        setResult(isClear ? `Limpiados ${data.updated} dias` : `Actualizados ${data.updated} dias como ${code}`)
         setTimeout(onComplete, 1500)
       } else {
         setResult(data.error || "Error")
@@ -135,6 +137,7 @@ export default function BatchModal({
               onChange={(e) => setCode(e.target.value)}
               style={{ appearance: "auto" }}
             >
+              <option value={LIBRE}>Limpiar (borrar codigo)</option>
               {CODES.map((c) => (
                 <option key={c} value={c}>
                   {c} - {CODE_SHORT[c]}
@@ -214,9 +217,9 @@ export default function BatchModal({
               type="submit"
               className="btn btn-primary"
               disabled={loading}
-              style={{ flex: 1, opacity: loading ? 0.6 : 1 }}
+              style={{ flex: 1, opacity: loading ? 0.6 : 1, background: isClear ? "var(--red)" : undefined }}
             >
-              {loading ? "Aplicando..." : "Aplicar"}
+              {loading ? (isClear ? "Limpiando..." : "Aplicando...") : isClear ? "Limpiar" : "Aplicar"}
             </button>
           </div>
         </form>

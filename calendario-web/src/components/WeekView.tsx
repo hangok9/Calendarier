@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useRef, useCallback, useEffect } from "react"
 import { DAY_NAMES, MONTH_NAMES, CODES, CODE_COLORS } from "@/lib/constants"
+import { computeInitialsMap } from "@/lib/initials"
 import type { Calendar, Person, Availability } from "@/types"
 
 function getAvailCode(personId: string, dateStr: string, availability: Availability[]): string | null {
@@ -86,6 +87,7 @@ export default function WeekView({
     setWeekIndex(0)
   }, [currentMonth])
 
+  const initialsMap = useMemo(() => computeInitialsMap(people), [people])
   const currentWeek = weeks[weekIndex] || weeks[0]
   const hasPrevWeek = weekIndex > 0 || currentMonthIndex > 0
   const hasNextWeek = weekIndex < weeks.length - 1 || currentMonthIndex < calendar.months.length - 1
@@ -368,7 +370,7 @@ export default function WeekView({
                 {people.map((person) => {
                   const code = getAvailCode(person.id, dateStr, availability)
                   const isFree = !code
-                  const initial = (person.display_name || person.name).charAt(0).toUpperCase()
+                  const initial = initialsMap.get(person.id) || (person.display_name || person.name).charAt(0).toUpperCase()
                   const bgColor = isFree
                     ? "#9CA3AF"
                     : CODE_COLORS[code!]?.bg || "#6B7280"

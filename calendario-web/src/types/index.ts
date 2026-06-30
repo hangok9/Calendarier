@@ -11,6 +11,8 @@ export interface Person {
   id: string
   calendar_id: string
   name: string
+  primer_apellido?: string | null
+  segundo_apellido?: string | null
   sort_order: number
   display_name?: string
   role?: string

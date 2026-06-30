@@ -29,11 +29,13 @@ CREATE TABLE calendars (
 );
 
 CREATE TABLE people (
-  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  calendar_id UUID NOT NULL REFERENCES calendars(id) ON DELETE CASCADE,
-  name        TEXT NOT NULL,
-  sort_order  INT NOT NULL DEFAULT 0,
-  user_id     UUID REFERENCES users(id),
+  id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  calendar_id       UUID NOT NULL REFERENCES calendars(id) ON DELETE CASCADE,
+  name              TEXT NOT NULL,
+  primer_apellido   TEXT,
+  segundo_apellido  TEXT,
+  sort_order        INT NOT NULL DEFAULT 0,
+  user_id           UUID REFERENCES users(id),
   UNIQUE(calendar_id, name)
 );
 
@@ -111,7 +113,6 @@ INSERT INTO calendars (slug, name, year, months) VALUES
 
 INSERT INTO users (username, password) VALUES
   ('elias',    '$2b$10$adJBKYfkLn4zLkckUHxYl.bsQY3Y4AImQbIrU/kqyqNQNJBcWCnG2'),
-  ('merino',   '$2b$10$RYZEBWdEOXSkgjzJZcYXpOtXYXRQTOm73yJ/MPE5oy18/dR7frxLa'),
   ('ponsa',    '$2b$10$nxNgti9X0hk1KxMeKedRnunJTUWOr7KB0rBYAFX6nuMLnTRu/WRHu'),
   ('ferran',   '$2b$10$E4cLTJ2i2FRKzWPUgLbHreMgJreKvdgzsfo39ss7u9WqyYvG1jac2'),
   ('august',   '$2b$10$977V0ZN5u920Xx1/GxajF.jQf43XBFWlz5Mgjtt7KYMUa7Q4HufXW'),
@@ -135,49 +136,49 @@ INSERT INTO users (username, password) VALUES
 -- ============================================================
 
 -- Grupo
-INSERT INTO people (calendar_id, name, sort_order, user_id)
-SELECT c.id, name, sort_order, u.id
+INSERT INTO people (calendar_id, name, primer_apellido, segundo_apellido, sort_order, user_id)
+SELECT c.id, name, primer_apellido, segundo_apellido, sort_order, u.id
 FROM (VALUES
-  ('ELIAS', 0, 'elias'),
-  ('MERINO', 1, 'merino'),
-  ('PONSA', 2, 'ponsa'),
-  ('FERRAN', 3, 'ferran'),
-  ('AUGUST', 4, 'august'),
-  ('JOAN', 5, 'joan'),
-  ('GRAU', 6, 'grau'),
-  ('POL', 7, 'pol')
-) AS p(name, sort_order, username)
+  ('Josep Maria', 'Elias',    'Eslava',    0, 'elias'),
+  ('Pepe',        'Merino',   'Delgado',   1, 'pepe'),
+  ('Alex',        'Ponsa',    'Ubago',     2, 'ponsa'),
+  ('Ferran',      'Oliver',   'Castella',  3, 'ferran'),
+  ('August',      'Escoda',   'Rebordosa', 4, 'august'),
+  ('Joan',        'Almirall', 'viñas',     5, 'joan'),
+  ('Grau',        'Buch',     'Rovira',    6, 'grau'),
+  ('Pol',         'Baulenas', 'Anton',     7, 'pol')
+) AS p(name, primer_apellido, segundo_apellido, sort_order, username)
 CROSS JOIN calendars c
 LEFT JOIN users u ON u.username = p.username
 WHERE c.slug = 'grupo';
 
 -- Barcelona
-INSERT INTO people (calendar_id, name, sort_order, user_id)
-SELECT c.id, name, sort_order, u.id
+INSERT INTO people (calendar_id, name, primer_apellido, segundo_apellido, sort_order, user_id)
+SELECT c.id, name, primer_apellido, segundo_apellido, sort_order, u.id
 FROM (VALUES
-  ('RESI', 0, 'resi'),
-  ('OSCAR', 1, 'oscar'),
-  ('CLARA', 2, 'clara'),
-  ('ANNA', 3, 'anna'),
-  ('PEPE', 4, 'pepe'),
-  ('IVAN', 5, 'ivan'),
-  ('YERAY', 6, 'yeray')
-) AS p(name, sort_order, username)
+  ('Jordi',   'Resina',   'Martinez',  0, 'resi'),
+  ('Oscar',   'Miguel',   'Sancho',    1, 'oscar'),
+  ('Clara',   'Font',     'Cabrafiga', 2, 'clara'),
+  ('Anna',    'Casas',    'Monfort',   3, 'anna'),
+  ('Pepe',    'Merino',   'Delgado',   4, 'pepe'),
+  ('Ivan',    'Rodriguez','Moliner',   5, 'ivan'),
+  ('Yeray',   'De Manuel','Alvarez',   6, 'yeray')
+) AS p(name, primer_apellido, segundo_apellido, sort_order, username)
 CROSS JOIN calendars c
 LEFT JOIN users u ON u.username = p.username
 WHERE c.slug = 'barcelona';
 
 -- Cachorritas
-INSERT INTO people (calendar_id, name, sort_order, user_id)
-SELECT c.id, name, sort_order, u.id
+INSERT INTO people (calendar_id, name, primer_apellido, segundo_apellido, sort_order, user_id)
+SELECT c.id, name, primer_apellido, segundo_apellido, sort_order, u.id
 FROM (VALUES
-  ('SUSANNA', 0, 'susanna'),
-  ('ZUA', 1, 'zua'),
-  ('PEPE', 2, 'pepe'),
-  ('ANTO', 3, 'anto'),
-  ('ELIAS', 4, 'elias'),
-  ('CRIS', 5, 'cris')
-) AS p(name, sort_order, username)
+  ('Susanna',  'Mora',     'Undurraga',  0, 'susanna'),
+  ('Victor',   'Zuaza',    'Marti',      1, 'zua'),
+  ('Pepe',     'Merino',   'Delgado',    2, 'pepe'),
+  ('Antonella','Cristina', 'Rodriguez',  3, 'anto'),
+  ('Josep Maria','Elias',  'Eslava',     4, 'elias'),
+  ('Cristina', 'Acha',     'Duck',       5, 'cris')
+) AS p(name, primer_apellido, segundo_apellido, sort_order, username)
 CROSS JOIN calendars c
 LEFT JOIN users u ON u.username = p.username
 WHERE c.slug = 'cachorritas';

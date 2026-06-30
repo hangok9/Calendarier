@@ -34,6 +34,8 @@
 - Mejorar feedback visual al marcar disponibilidad (animación de guardado)
 - Confirmación antes de recargar si hay cambios sin guardar
 - Atajos de teclado (flechas para navegar semanas)
+- Recordar contraseña / "Keep me logged in" en el login
+- Foto de perfil de usuario (avatar upload)
 
 ### Corto plazo
 - Vista de agenda/día en móvil (tocar un día y ver detalle)
