@@ -3,12 +3,12 @@
 import { useRouter } from "next/navigation"
 import type { ViewType } from "@/types"
 
-const navItems: { id: ViewType; label: string; icon: string }[] = [
-  { id: "setup", label: "Configurar", icon: "⚙" },
-  { id: "calendario", label: "Calendario", icon: "▦" },
-  { id: "resumen", label: "Resumen", icon: "◈" },
-  { id: "planes", label: "Planes", icon: "📋" },
-  { id: "eventos", label: "Eventos", icon: "📅" },
+const navItems: { id: ViewType; label: string }[] = [
+  { id: "setup", label: "Configurar" },
+  { id: "calendario", label: "Calendario" },
+  { id: "resumen", label: "Resumen" },
+  { id: "planes", label: "Planes" },
+  { id: "eventos", label: "Eventos" },
 ]
 
 export default function Nav({
@@ -77,7 +77,7 @@ export default function Nav({
                   fontFamily: "var(--font-sans)",
                 }}
               >
-                {item.icon} {item.label}
+                {item.label}
               </button>
             ))}
             <div
@@ -122,7 +122,6 @@ export default function Nav({
                 onNavigate(item.id)
               }}
             >
-              <span className="nav-icon">{item.icon}</span>
               <span>{item.label}</span>
             </a>
           ))}
@@ -145,7 +144,6 @@ export default function Nav({
               borderRadius: "var(--radius)",
             }}
           >
-            <span className="nav-icon">📊</span>
             <span>Dashboard</span>
           </a>
           <a
@@ -167,7 +165,6 @@ export default function Nav({
               borderRadius: "var(--radius)",
             }}
           >
-            <span className="nav-icon">🚪</span>
             <span>Salir</span>
           </a>
         </div>

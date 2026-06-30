@@ -50,7 +50,12 @@ export default function ForgotPasswordPage() {
 
           {sent ? (
             <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>✉</div>
+              <div style={{ marginBottom: "1rem" }}>
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="4" width="20" height="16" rx="2" />
+                  <path d="M22 4L12 13L2 4" />
+                </svg>
+              </div>
               <p style={{ color: "var(--text-secondary)", fontSize: "0.875rem", lineHeight: 1.6 }}>
                 Si el email esta registrado, recibiras un enlace para restablecer tu contrasena.
               </p>

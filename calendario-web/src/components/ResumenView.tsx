@@ -154,7 +154,6 @@ export default function ResumenView({
             gap: "0.5rem",
           }}
         >
-          <span style={{ width: "1.25rem", height: "1.25rem", borderRadius: "0.375rem", background: "var(--emerald-soft)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--emerald)", fontSize: "0.6875rem" }}>◈</span>
           Por persona
         </h3>
         <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
@@ -208,7 +207,6 @@ export default function ResumenView({
             gap: "0.5rem",
           }}
         >
-          <span style={{ width: "1.25rem", height: "1.25rem", borderRadius: "0.375rem", background: "var(--accent-soft)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--accent)", fontSize: "0.6875rem" }}>◈</span>
           Cobertura diaria
         </h3>
         <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch", margin: "-0.5rem", padding: "0.5rem" }}>
@@ -266,7 +264,6 @@ export default function ResumenView({
             gap: "0.5rem",
           }}
         >
-          <span style={{ width: "1.25rem", height: "1.25rem", borderRadius: "0.375rem", background: "var(--accent-soft)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--accent)", fontSize: "0.6875rem" }}>◈</span>
           Umbrales de disponibilidad
         </h3>
         <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>

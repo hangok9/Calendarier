@@ -82,26 +82,8 @@ export default function BatchModal({
             fontSize: "1.125rem",
             fontWeight: 700,
             marginBottom: "1.25rem",
-            display: "flex",
-            alignItems: "center",
-            gap: "0.5rem",
           }}
         >
-          <span
-            style={{
-              width: "1.75rem",
-              height: "1.75rem",
-              borderRadius: "0.5rem",
-              background: "var(--accent-soft)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "var(--accent)",
-              fontSize: "0.875rem",
-            }}
-          >
-            📋
-          </span>
           Marcar rango
         </h3>
 

@@ -190,7 +190,6 @@ export default function PlanesView({
             color: "var(--text-muted)",
           }}
         >
-          <div style={{ fontSize: "2rem", marginBottom: "0.75rem" }}>📋</div>
           <p style={{ fontSize: "1rem", fontWeight: 600, color: "var(--text-secondary)" }}>
             No hay planes todavia
           </p>
@@ -248,7 +247,7 @@ export default function PlanesView({
                         color: "var(--green)",
                       }}
                     >
-                      ✅ {accepts}
+                      OK {accepts}
                     </span>
                     <span
                       className="pill"
@@ -257,7 +256,7 @@ export default function PlanesView({
                         color: "var(--red)",
                       }}
                     >
-                      ❌ {declines}
+                      NO {declines}
                     </span>
                     <span
                       className="pill"
@@ -266,7 +265,7 @@ export default function PlanesView({
                         color: "var(--amber)",
                       }}
                     >
-                      ❓ {maybes}
+                      ? {maybes}
                     </span>
                   </div>
                 </div>
@@ -317,7 +316,6 @@ export default function PlanesView({
                         }}
                         onClick={() => handleRespond(plan.id, opt)}
                       >
-                        {opt === "accept" ? "✅" : opt === "decline" ? "❌" : "❓"}{" "}
                         {labels[opt]}
                       </button>
                     )
@@ -336,7 +334,7 @@ export default function PlanesView({
                   >
                     <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem" }}>
                       {plan.responses.map((r) => {
-                        const icons = { accept: "✅", decline: "❌", maybe: "❓" }
+                        const labels = { accept: "OK", decline: "NO", maybe: "?" }
                         return (
                           <span
                             key={r.id}
@@ -347,7 +345,7 @@ export default function PlanesView({
                               gap: "0.25rem",
                             }}
                           >
-                            {icons[r.response]} {r.person_name}
+                            <span style={{ fontWeight: 600, fontSize: "0.6875rem", color: r.response === "accept" ? "var(--green)" : r.response === "decline" ? "var(--red)" : "var(--amber)" }}>{labels[r.response]}</span> {r.person_name}
                           </span>
                         )
                       })}

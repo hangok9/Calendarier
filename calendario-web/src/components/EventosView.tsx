@@ -335,7 +335,6 @@ export default function EventosView({
             color: "var(--text-muted)",
           }}
         >
-          <div style={{ fontSize: "2rem", marginBottom: "0.75rem" }}>📅</div>
           <p style={{ fontSize: "1rem", fontWeight: 600, color: "var(--text-secondary)" }}>
             No hay eventos
           </p>

@@ -184,7 +184,7 @@ export default function DashboardPage() {
                   <span style={{ fontWeight: 600 }}>{cal.name}</span>
                   {cal.membership && (
                     <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginLeft: "0.5rem" }}>
-                      {cal.membership.role === "manager" ? "⭐ Gestor" : "👤 Miembro"}
+                      {cal.membership.role === "manager" ? "Gestor" : "Miembro"}
                       {cal.membership.alias && ` · ${cal.membership.alias}`}
                     </span>
                   )}
