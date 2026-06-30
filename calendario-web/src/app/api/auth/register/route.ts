@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
 import { supabase } from "@/lib/supabase"
 import { createSession } from "@/lib/auth"
+import { sendWelcomeEmail } from "@/lib/email"
 
 export async function POST(request: Request) {
   try {
@@ -71,14 +72,13 @@ export async function POST(request: Request) {
       await supabase.from("people").update({ user_id: user.id }).in("id", ids)
     }
 
-    // Stub email (replace with real email service later)
-    try {
-      console.log(`[EMAIL STUB] Bienvenido a Calendarier, ${username}!
-    Usuario: ${usernameLower}
-    Email: ${email || "no especificado"}
-    (El envio real se implementara con Resend/SendGrid mas adelante)`)
-    } catch {
-      // Email sending is best-effort
+    // Send welcome email
+    if (user.email) {
+      try {
+        await sendWelcomeEmail(user.email, user.username)
+      } catch (e) {
+        console.error("Welcome email error:", e)
+      }
     }
 
     await createSession({

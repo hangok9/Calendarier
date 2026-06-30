@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
 import { getSession } from "@/lib/auth"
+import { sendInvitationEmail } from "@/lib/email"
 
 export async function GET(
   _request: Request,
@@ -85,7 +86,7 @@ export async function POST(
 
     const { data: calendar } = await supabase
       .from("calendars")
-      .select("id")
+      .select("id, name")
       .eq("slug", slug)
       .single()
 
@@ -95,7 +96,7 @@ export async function POST(
 
     const { data: currentPerson } = await supabase
       .from("people")
-      .select("id, role")
+      .select("id, role, name")
       .eq("calendar_id", calendar.id)
       .eq("user_id", session.user_id)
       .maybeSingle()
@@ -111,7 +112,7 @@ export async function POST(
     const usernameLower = username.toLowerCase().trim()
     const { data: user } = await supabase
       .from("users")
-      .select("id")
+      .select("id, email")
       .eq("username", usernameLower)
       .maybeSingle()
 
@@ -162,6 +163,17 @@ export async function POST(
 
     if (addError) {
       return NextResponse.json({ error: "Error al anadir persona" }, { status: 500 })
+    }
+
+    // Send invitation email
+    if (user.email) {
+      const inviteLink = `${process.env.BASE_URL || "http://localhost:3000"}/calendario/${slug}`
+      const invitedBy = currentPerson.name || session.username
+      try {
+        await sendInvitationEmail(user.email, calendar.name, invitedBy, inviteLink)
+      } catch (e) {
+        console.error("Invitation email error:", e)
+      }
     }
 
     return NextResponse.json({

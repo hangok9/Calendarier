@@ -189,6 +189,11 @@ export default function LoginPage() {
               Crear cuenta
             </a>
           </div>
+          <div style={{ textAlign: "center", marginTop: "0.75rem", fontSize: "0.75rem" }}>
+            <a href="/forgot-password" style={{ color: "var(--text-muted)", textDecoration: "none" }}>
+              Olvide mi contrasena
+            </a>
+          </div>
         </div>
       </main>
     </>
