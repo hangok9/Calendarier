@@ -14,7 +14,7 @@ export const CODE_MEANINGS: Record<string, string> = {
 }
 
 export const CODE_SHORT: Record<string, string> = {
-  TM: "Manana",
+  TM: "Mañana",
   TT: "Tarde",
   TN: "Noche",
   FV: "Fuera (vuelve)",
