@@ -120,7 +120,7 @@ export default function TableView({
                               <span
                                 className="badge"
                                 style={{
-                                  background: "var(--green)",
+                                  background: "var(--text-muted)",
                                   color: "#fff",
                                   fontSize: "0.5625rem",
                                   display: "inline-flex",

@@ -37,8 +37,9 @@ calendario-web/
 │   │
 │   ├── components/
 │   │   ├── Nav.tsx              # Barra superior con tabs
-│   │   ├── CalendarView.tsx     # Contenedor: tabs Grid/Table + BatchModal
-│   │   ├── GridView.tsx         # Cuadrícula mensual (mobile-first, drag&drop)
+│   │   ├── CalendarView.tsx     # Contenedor: WeekView/GridView + TableView + BatchModal. Detecta móvil y cambia entre WeekView y GridView
+│   │   ├── GridView.tsx         # Cuadrícula mensual (desktop, drag&drop)
+│   │   ├── WeekView.tsx         # Vista semanal compacta (móvil, drag&drop)
 │   │   ├── TableView.tsx        # Tabla diaria (sticky columns, touch targets)
 │   │   ├── SetupView.tsx        # Gestión de personas, alias, códigos
 │   │   ├── BatchModal.tsx       # Modal para marcar rango de fechas

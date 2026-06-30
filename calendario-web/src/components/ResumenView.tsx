@@ -126,7 +126,7 @@ export default function ResumenView({
           <div className="stat-label">Total dias en el periodo</div>
         </div>
         <div className="stat-card">
-          <div className="stat-value" style={{ color: "var(--green)" }}>
+          <div className="stat-value" style={{ color: "var(--text-secondary)" }}>
             {stats.allFree}
           </div>
           <div className="stat-label">Dias todos libres</div>
@@ -165,7 +165,7 @@ export default function ResumenView({
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.5rem" }}>
                   <span style={{ fontWeight: 700, fontSize: "0.875rem" }}>{ps.name}</span>
                   <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
-                    <span style={{ color: "var(--green)", fontWeight: 600 }}>{ps.free}</span> libres ({pctFree}%)
+                    <span style={{ color: "var(--text-muted)", fontWeight: 600 }}>{ps.free}</span> libres ({pctFree}%)
                   </span>
                 </div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "0.375rem" }}>
@@ -214,7 +214,7 @@ export default function ResumenView({
             <thead>
               <tr>
                 <th style={{ textAlign: "left", padding: "0.5rem 0.625rem", borderBottom: "2px solid var(--border)", color: "var(--text-muted)", fontWeight: 600, position: "sticky", left: 0, background: "var(--surface)", zIndex: 1 }}>Fecha</th>
-                <th style={{ textAlign: "center", padding: "0.5rem 0.375rem", borderBottom: "2px solid var(--border)", color: "var(--green)", fontWeight: 600 }}>Libre</th>
+                <th style={{ textAlign: "center", padding: "0.5rem 0.375rem", borderBottom: "2px solid var(--border)", color: "var(--text-muted)", fontWeight: 600 }}>Libre</th>
                 {COVERAGE_CODES.map((code) => (
                   <th key={code} style={{ textAlign: "center", padding: "0.5rem 0.375rem", borderBottom: "2px solid var(--border)", color: CODE_COLORS[code]?.bg, fontWeight: 600 }}>{code}</th>
                 ))}
@@ -230,7 +230,7 @@ export default function ResumenView({
                     <td style={{ padding: "0.5rem 0.625rem", fontWeight: 500, whiteSpace: "nowrap", position: "sticky", left: 0, background: "var(--surface)", zIndex: 0 }}>
                       {row.dateStr.slice(5)} <span style={{ color: row.dayName === "Sab" || row.dayName === "Dom" ? "#EF4444" : "var(--text-muted)", fontSize: "0.6875rem" }}>{row.dayName}</span>
                     </td>
-                    <td style={{ textAlign: "center", padding: "0.5rem 0.375rem", fontWeight: 700, color: row.libre === people.length ? "var(--emerald)" : "var(--green)" }}>
+                    <td style={{ textAlign: "center", padding: "0.5rem 0.375rem", fontWeight: 700, color: row.libre === people.length ? "var(--emerald)" : "var(--text-muted)" }}>
                       {row.libre}
                     </td>
                     {COVERAGE_CODES.map((code) => (
@@ -269,7 +269,7 @@ export default function ResumenView({
         <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
           {[
             { label: `Todos libres (${people.length}/${people.length})`, color: "var(--emerald)", threshold: people.length },
-            { label: `Max 1 ocupado (${people.length - 1}/${people.length})`, color: "var(--green)", threshold: people.length - 1 },
+            { label: `Max 1 ocupado (${people.length - 1}/${people.length})`, color: "var(--text-secondary)", threshold: people.length - 1 },
             { label: `Max 2 ocupados (${people.length - 2}/${people.length})`, color: "var(--amber)", threshold: people.length - 2 },
             { label: `Max 3 ocupados (${people.length - 3}/${people.length})`, color: "var(--orange)", threshold: people.length - 3 },
           ].map((item) => {

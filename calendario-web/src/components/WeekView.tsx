@@ -370,7 +370,7 @@ export default function WeekView({
                   const isFree = !code
                   const initial = (person.display_name || person.name).charAt(0).toUpperCase()
                   const bgColor = isFree
-                    ? "#22C55E"
+                    ? "#9CA3AF"
                     : CODE_COLORS[code!]?.bg || "#6B7280"
 
                   return (
