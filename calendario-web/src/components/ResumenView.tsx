@@ -8,6 +8,9 @@ function getAvailCode(personId: string, dateStr: string, availability: Availabil
   return availability.find((a) => a.person_id === personId && a.date === dateStr)?.code ?? null
 }
 
+const COVERAGE_CODES = ["TM", "TT", "TN"]
+const OTHER_CODES = CODES.filter((c) => !COVERAGE_CODES.includes(c))
+
 export default function ResumenView({
   calendar,
   people,
@@ -23,10 +26,15 @@ export default function ResumenView({
     const n = people.length
     let allFree = 0
     let allFn = 0
-    const codeCounts: Record<string, number> = {}
-    CODES.forEach((c) => (codeCounts[c] = 0))
 
-    const rows: { dateStr: string; month: number; day: number; dayName: string; free: number; codes: Record<string, number> }[] = []
+    const personStats: { id: string; name: string; free: number; codes: Record<string, number> }[] = people.map((p) => ({
+      id: p.id,
+      name: p.display_name || p.name,
+      free: 0,
+      codes: Object.fromEntries(CODES.map((c) => [c, 0])),
+    }))
+
+    const dayRows: { dateStr: string; month: number; day: number; dayName: string; libre: number; coverage: Record<string, number>; otros: number }[] = []
     const dayNames = ["Dom", "Lun", "Mar", "Mie", "Jue", "Vie", "Sab"]
 
     for (const m of calendar.months) {
@@ -34,37 +42,43 @@ export default function ResumenView({
       for (let d = 1; d <= daysInMonth; d++) {
         const date = new Date(calendar.year, m - 1, d)
         const dateStr = date.toISOString().split("T")[0]
-        let free = 0
-        const rowCodes: Record<string, number> = {}
-        CODES.forEach((c) => (rowCodes[c] = 0))
+        let libre = 0
+        const coverage: Record<string, number> = {}
+        let otros = 0
+        COVERAGE_CODES.forEach((c) => (coverage[c] = 0))
 
         for (const person of people) {
           const code = getAvailCode(person.id, dateStr, availability)
+          const pStats = personStats.find((ps) => ps.id === person.id)
           if (!code) {
-            free++
-          } else if (rowCodes[code] !== undefined) {
-            rowCodes[code]++
-            codeCounts[code] = (codeCounts[code] || 0) + 1
+            libre++
+            if (pStats) pStats.free++
+          } else if (COVERAGE_CODES.includes(code)) {
+            coverage[code]++
+            if (pStats) pStats.codes[code]++
+          } else {
+            otros++
+            if (pStats) pStats.codes[code]++
           }
         }
 
-        if (free === n) allFree++
-        if (rowCodes["FN"] === n) allFn++
+        if (libre === n) allFree++
 
-        rows.push({
+        dayRows.push({
           dateStr,
           month: m,
           day: d,
           dayName: dayNames[date.getDay()],
-          free,
-          codes: rowCodes,
+          libre,
+          coverage,
+          otros,
         })
       }
     }
 
-    const avgAvailability = rows.reduce((sum, r) => sum + r.free / n, 0) / (rows.length || 1)
+    const avgAvailability = dayRows.reduce((sum, r) => sum + r.libre / n, 0) / (dayRows.length || 1)
 
-    return { allFree, allFn, avgAvailability, codeCounts, rows }
+    return { allFree, allFn, avgAvailability, personStats, dayRows }
   }, [calendar, people, availability])
 
   const monthRange = calendar.months.map((m) => MONTH_NAMES[m]).join(" - ")
@@ -118,12 +132,6 @@ export default function ResumenView({
           <div className="stat-label">Dias todos libres</div>
         </div>
         <div className="stat-card">
-          <div className="stat-value" style={{ color: "var(--orange)" }}>
-            {stats.allFn}
-          </div>
-          <div className="stat-label">Dias todos FN</div>
-        </div>
-        <div className="stat-card">
           <div className="stat-value" style={{ color: "var(--purple)" }}>
             {Math.round(stats.avgAvailability * 100)}%
           </div>
@@ -131,9 +139,9 @@ export default function ResumenView({
         </div>
       </div>
 
-      {/* Code distribution */}
+      {/* Per-person breakdown */}
       <div
-        className="surface-elevated"
+        className="surface-elevated stagger"
         style={{ padding: "1.5rem", marginBottom: "1.5rem" }}
       >
         <h3
@@ -146,80 +154,107 @@ export default function ResumenView({
             gap: "0.5rem",
           }}
         >
-          <span
-            style={{
-              width: "1.25rem",
-              height: "1.25rem",
-              borderRadius: "0.375rem",
-              background: "var(--emerald-soft)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "var(--emerald)",
-              fontSize: "0.6875rem",
-            }}
-          >
-            ◈
-          </span>
-          Distribucion por codigo
+          <span style={{ width: "1.25rem", height: "1.25rem", borderRadius: "0.375rem", background: "var(--emerald-soft)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--emerald)", fontSize: "0.6875rem" }}>◈</span>
+          Por persona
         </h3>
         <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-          {CODES.map((code) => {
-            const count = stats.codeCounts[code] || 0
-            const maxCount = Math.max(...CODES.map((c) => stats.codeCounts[c] || 0), 1)
-            const pct = Math.round((count / maxCount) * 100)
-            const c = CODE_COLORS[code]
+          {stats.personStats.map((ps) => {
+            const totalAssigned = Object.values(ps.codes).reduce((a, b) => a + b, 0)
+            const pctFree = totalDays > 0 ? Math.round((ps.free / totalDays) * 100) : 0
             return (
-              <div
-                key={code}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.625rem",
-                }}
-              >
-                <span
-                  className="badge"
-                  style={{
-                    background: c.bg,
-                    color: "#fff",
-                    width: "1.5rem",
-                    height: "1.5rem",
-                    fontSize: "0.5625rem",
-                  }}
-                >
-                  {code}
-                </span>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      fontSize: "0.75rem",
-                    }}
-                  >
-                    <span style={{ color: "var(--text-secondary)" }}>
-                      {CODE_SHORT[code]}
-                    </span>
-                    <span style={{ fontWeight: 600 }}>{count}</span>
-                  </div>
-                  <div className="progress-track" style={{ marginTop: "0.125rem" }}>
-                    <div
-                      className="progress-fill"
-                      style={{ width: `${pct}%`, background: c.bg }}
-                    />
-                  </div>
+              <div key={ps.id} style={{ padding: "0.75rem 1rem", borderRadius: "0.75rem", background: "var(--bg)", border: "1px solid var(--border-light)" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.5rem" }}>
+                  <span style={{ fontWeight: 700, fontSize: "0.875rem" }}>{ps.name}</span>
+                  <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
+                    <span style={{ color: "var(--green)", fontWeight: 600 }}>{ps.free}</span> libres ({pctFree}%)
+                  </span>
+                </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "0.375rem" }}>
+                  {CODES.map((code) => {
+                    const count = ps.codes[code]
+                    if (count === 0) return null
+                    const c = CODE_COLORS[code]
+                    return (
+                      <span key={code} style={{ display: "inline-flex", alignItems: "center", gap: "0.25rem", background: c.chipBg, color: c.chipText, padding: "0.1875rem 0.5rem 0.1875rem 0.375rem", borderRadius: "999px", fontSize: "0.6875rem", fontWeight: 600 }}>
+                        <span style={{ width: "0.375rem", height: "0.375rem", borderRadius: "50%", background: c.bg, flexShrink: 0 }} />
+                        {count} {CODE_SHORT[code]}
+                      </span>
+                    )
+                  })}
                 </div>
               </div>
             )
           })}
+          {people.length === 0 && (
+            <div style={{ textAlign: "center", padding: "2rem", color: "var(--text-muted)", fontSize: "0.875rem" }}>
+              No hay personas registradas
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Daily coverage table */}
+      <div
+        className="surface-elevated stagger"
+        style={{ padding: "1.5rem", marginBottom: "1.5rem" }}
+      >
+        <h3
+          style={{
+            fontSize: "0.9375rem",
+            fontWeight: 700,
+            marginBottom: "1.25rem",
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5rem",
+          }}
+        >
+          <span style={{ width: "1.25rem", height: "1.25rem", borderRadius: "0.375rem", background: "var(--accent-soft)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--accent)", fontSize: "0.6875rem" }}>◈</span>
+          Cobertura diaria
+        </h3>
+        <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch", margin: "-0.5rem", padding: "0.5rem" }}>
+          <table style={{ width: "100%", minWidth: "20rem", borderCollapse: "collapse", fontSize: "0.75rem" }}>
+            <thead>
+              <tr>
+                <th style={{ textAlign: "left", padding: "0.5rem 0.625rem", borderBottom: "2px solid var(--border)", color: "var(--text-muted)", fontWeight: 600, position: "sticky", left: 0, background: "var(--surface)", zIndex: 1 }}>Fecha</th>
+                <th style={{ textAlign: "center", padding: "0.5rem 0.375rem", borderBottom: "2px solid var(--border)", color: "var(--green)", fontWeight: 600 }}>Libre</th>
+                {COVERAGE_CODES.map((code) => (
+                  <th key={code} style={{ textAlign: "center", padding: "0.5rem 0.375rem", borderBottom: "2px solid var(--border)", color: CODE_COLORS[code]?.bg, fontWeight: 600 }}>{code}</th>
+                ))}
+                <th style={{ textAlign: "center", padding: "0.5rem 0.375rem", borderBottom: "2px solid var(--border)", color: "var(--text-muted)", fontWeight: 600 }}>No disp.</th>
+              </tr>
+            </thead>
+            <tbody>
+              {stats.dayRows.map((row) => {
+                const coverageSum = COVERAGE_CODES.reduce((s, c) => s + row.coverage[c], 0)
+                const totalMarked = coverageSum + row.otros
+                return (
+                  <tr key={row.dateStr} style={{ borderBottom: "1px solid var(--border-light)" }}>
+                    <td style={{ padding: "0.5rem 0.625rem", fontWeight: 500, whiteSpace: "nowrap", position: "sticky", left: 0, background: "var(--surface)", zIndex: 0 }}>
+                      {row.dateStr.slice(5)} <span style={{ color: row.dayName === "Sab" || row.dayName === "Dom" ? "#EF4444" : "var(--text-muted)", fontSize: "0.6875rem" }}>{row.dayName}</span>
+                    </td>
+                    <td style={{ textAlign: "center", padding: "0.5rem 0.375rem", fontWeight: 700, color: row.libre === people.length ? "var(--emerald)" : "var(--green)" }}>
+                      {row.libre}
+                    </td>
+                    {COVERAGE_CODES.map((code) => (
+                      <td key={code} style={{ textAlign: "center", padding: "0.5rem 0.375rem", fontWeight: 600, color: row.coverage[code] > 0 ? CODE_COLORS[code]?.chipText : "var(--text-muted)" }}>
+                        {row.coverage[code] || "—"}
+                      </td>
+                    ))}
+                    <td style={{ textAlign: "center", padding: "0.5rem 0.375rem", color: row.otros > 0 ? "var(--orange)" : "var(--text-muted)", fontWeight: 600 }}>
+                      {row.otros || "—"}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
         </div>
       </div>
 
       {/* Thresholds */}
       <div
-        className="surface-elevated"
-        style={{ padding: "1.5rem", marginBottom: "1.5rem" }}
+        className="surface-elevated stagger"
+        style={{ padding: "1.5rem" }}
       >
         <h3
           style={{
@@ -231,21 +266,7 @@ export default function ResumenView({
             gap: "0.5rem",
           }}
         >
-          <span
-            style={{
-              width: "1.25rem",
-              height: "1.25rem",
-              borderRadius: "0.375rem",
-              background: "var(--accent-soft)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "var(--accent)",
-              fontSize: "0.6875rem",
-            }}
-          >
-            ◈
-          </span>
+          <span style={{ width: "1.25rem", height: "1.25rem", borderRadius: "0.375rem", background: "var(--accent-soft)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--accent)", fontSize: "0.6875rem" }}>◈</span>
           Umbrales de disponibilidad
         </h3>
         <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
@@ -255,7 +276,7 @@ export default function ResumenView({
             { label: `Max 2 ocupados (${people.length - 2}/${people.length})`, color: "var(--amber)", threshold: people.length - 2 },
             { label: `Max 3 ocupados (${people.length - 3}/${people.length})`, color: "var(--orange)", threshold: people.length - 3 },
           ].map((item) => {
-            const count = stats.rows.filter((r) => r.free >= item.threshold).length
+            const count = stats.dayRows.filter((r) => r.libre >= item.threshold).length
             const pct = totalDays > 0 ? Math.round((count / totalDays) * 100) : 0
             return (
               <div key={item.label}>
