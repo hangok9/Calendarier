@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import { MONTH_SHORT } from "@/lib/constants"
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -135,16 +136,16 @@ export default function DashboardPage() {
                 </div>
                 <div style={{ display: "flex", gap: "0.75rem" }}>
                   <div style={{ flex: 1 }}>
-                    <label style={{ display: "block", fontSize: "0.8125rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.375rem" }}>Ano</label>
-                    <input className="input-field" type="number" value={newYear} onChange={(e) => setNewYear(parseInt(e.target.value) || 2026)} min={2020} max={2030} />
+                    <label style={{ display: "block", fontSize: "0.8125rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.375rem" }}>Año</label>
+                    <input className="input-field" type="number" value={newYear} onChange={(e) => setNewYear(parseInt(e.target.value) || 2026)} min={2000} max={2100} />
                   </div>
                   <div style={{ flex: 2 }}>
                     <label style={{ display: "block", fontSize: "0.8125rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.375rem" }}>Meses</label>
-                    <div style={{ display: "flex", gap: "0.375rem", flexWrap: "wrap" }}>
-                      {[6, 7, 8, 9].map((m) => (
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "0.375rem" }}>
+                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((m) => (
                         <button key={m} type="button" onClick={() => toggleMonth(m)}
-                          style={{ padding: "0.375rem 0.75rem", fontSize: "0.8125rem", borderRadius: "0.5rem", border: "1px solid var(--border)", background: newMonths.includes(m) ? "var(--accent)" : "var(--bg)", color: newMonths.includes(m) ? "#fff" : "var(--text)", cursor: "pointer" }}>
-                          {["Jun", "Jul", "Ago", "Sep"][m - 6]}
+                          style={{ padding: "0.375rem", fontSize: "0.75rem", borderRadius: "0.5rem", border: "1px solid var(--border)", background: newMonths.includes(m) ? "var(--accent)" : "var(--bg)", color: newMonths.includes(m) ? "#fff" : "var(--text)", cursor: "pointer" }}>
+                          {MONTH_SHORT[m]}
                         </button>
                       ))}
                     </div>
