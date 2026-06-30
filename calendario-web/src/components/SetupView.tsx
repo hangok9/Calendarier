@@ -1,13 +1,19 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { MONTH_SHORT, CODES, CODE_SHORT, CODE_COLORS } from "@/lib/constants"
-import type { Calendar, Person } from "@/types"
+import type { Calendar, Person, Availability } from "@/types"
+
+function fmtDate(iso: string): string {
+  const d = new Date(iso + "T12:00:00")
+  return `${d.getDate()} ${MONTH_SHORT[d.getMonth() + 1]}`
+}
 
 export default function SetupView({
   calendar,
   people,
+  availability,
   myRole,
   myPersonId,
   session,
@@ -15,6 +21,7 @@ export default function SetupView({
 }: {
   calendar: Calendar
   people: Person[]
+  availability: Availability[]
   myRole: string
   myPersonId: string | null
   session: any
@@ -30,6 +37,36 @@ export default function SetupView({
   const [deleting, setDeleting] = useState(false)
 
   const isManager = myRole === "manager"
+
+  const myCodes = useMemo(() => {
+    if (!myPersonId) return new Map<string, string[]>()
+    const grouped = new Map<string, string[]>()
+    for (const a of availability) {
+      if (a.person_id !== myPersonId || !a.code) continue
+      const dates = grouped.get(a.code) || []
+      dates.push(a.date)
+      grouped.set(a.code, dates)
+    }
+    for (const [, dates] of grouped) {
+      dates.sort()
+    }
+    return grouped
+  }, [availability, myPersonId])
+
+  const [clearingCode, setClearingCode] = useState<string | null>(null)
+
+  async function handleClearCode(code: string, dates: string[]) {
+    setClearingCode(code)
+    try {
+      await fetch(`/api/calendars/${calendar.slug}/batch`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ person_id: myPersonId, code: null, start_date: dates[0], end_date: dates[dates.length - 1] }),
+      })
+      onDataChange()
+    } catch {}
+    setClearingCode(null)
+  }
 
   async function handleAddPerson(e: React.FormEvent) {
     e.preventDefault()
@@ -232,6 +269,58 @@ export default function SetupView({
             </p>
           </div>
         </div>
+
+        {/* My Codes */}
+        {myCodes.size > 0 && (
+          <div className="surface-elevated stagger" style={{ padding: "1.75rem" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.625rem", marginBottom: "1.5rem" }}>
+              <h2 style={{ fontSize: "1.125rem", fontWeight: 700 }}>Mis codigos ({[...myCodes.values()].reduce((s, d) => s + d.length, 0)} dias)</h2>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+              {Array.from(myCodes.entries()).map(([code, dates]) => {
+                const c = CODE_COLORS[code]
+                const ranges: string[] = []
+                let start = dates[0]
+                let end = dates[0]
+                for (let i = 1; i < dates.length; i++) {
+                  const prev = new Date(end + "T12:00:00")
+                  const curr = new Date(dates[i] + "T12:00:00")
+                  if (curr.getTime() - prev.getTime() === 86400000) {
+                    end = dates[i]
+                  } else {
+                    ranges.push(start === end ? fmtDate(start) : `${fmtDate(start)} - ${fmtDate(end)}`)
+                    start = dates[i]
+                    end = dates[i]
+                  }
+                }
+                ranges.push(start === end ? fmtDate(start) : `${fmtDate(start)} - ${fmtDate(end)}`)
+                return (
+                  <div key={code} style={{ display: "flex", alignItems: "flex-start", gap: "0.75rem", padding: "0.75rem", borderRadius: "0.5rem", background: "var(--bg)", border: "1px solid var(--border-light)" }}>
+                    <span className="badge" style={{ background: c?.bg || "#6B7280", color: "#fff", flexShrink: 0 }}>{code}</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.25rem" }}>
+                        {dates.length} {dates.length === 1 ? "dia" : "dias"}
+                      </div>
+                      <div style={{ fontSize: "0.6875rem", color: "var(--text-muted)", lineHeight: 1.5, wordBreak: "break-word" }}>
+                        {ranges.join(", ")}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleClearCode(code, dates)}
+                      disabled={clearingCode === code}
+                      style={{
+                        flexShrink: 0, fontSize: "0.75rem", padding: "0.375rem 0.75rem", border: "none", borderRadius: "0.375rem",
+                        cursor: "pointer", background: "var(--red)", color: "#fff", fontFamily: "var(--font-sans)", fontWeight: 600, opacity: clearingCode === code ? 0.6 : 1,
+                      }}
+                    >
+                      {clearingCode === code ? "..." : "Limpiar"}
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

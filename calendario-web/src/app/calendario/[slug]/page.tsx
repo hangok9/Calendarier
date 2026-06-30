@@ -96,6 +96,7 @@ export default function CalendarPage() {
           <SetupView
             calendar={calendar}
             people={people}
+            availability={availability}
             myRole={myRole}
             myPersonId={personId}
             session={session}
