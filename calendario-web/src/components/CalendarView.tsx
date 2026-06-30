@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react"
 import GridView from "./GridView"
+import WeekView from "./WeekView"
 import TableView from "./TableView"
 import BatchModal from "./BatchModal"
 import { MONTH_NAMES } from "@/lib/constants"
@@ -27,11 +28,7 @@ export default function CalendarView({
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 767px)")
     setIsMobile(mq.matches)
-    if (mq.matches) setTab("table")
-    const handler = (e: MediaQueryListEvent) => {
-      setIsMobile(e.matches)
-      if (e.matches) setTab("table")
-    }
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches)
     mq.addEventListener("change", handler)
     return () => mq.removeEventListener("change", handler)
   }, [])
@@ -107,14 +104,12 @@ export default function CalendarView({
 
         {/* Tabs */}
         <div className="tab-bar stagger" style={{ marginBottom: "1.25rem" }}>
-          {!isMobile && (
-            <button
-              className={`tab-btn-style ${tab === "grid" ? "active" : ""}`}
-              onClick={() => setTab("grid")}
-            >
-              Cuadricula
-            </button>
-          )}
+          <button
+            className={`tab-btn-style ${tab === "grid" ? "active" : ""}`}
+            onClick={() => setTab("grid")}
+          >
+            {isMobile ? "Semana" : "Cuadricula"}
+          </button>
           <button
             className={`tab-btn-style ${tab === "table" ? "active" : ""}`}
             onClick={() => setTab("table")}
@@ -123,7 +118,15 @@ export default function CalendarView({
           </button>
         </div>
 
-        {tab === "grid" && (
+        {tab === "grid" && (isMobile ? (
+          <WeekView
+            calendar={calendar}
+            people={people}
+            availability={availability}
+            session={session}
+            onAvailabilityChange={onAvailabilityChange}
+          />
+        ) : (
           <GridView
             calendar={calendar}
             people={people}
@@ -131,7 +134,7 @@ export default function CalendarView({
             session={session}
             onAvailabilityChange={onAvailabilityChange}
           />
-        )}
+        ))}
 
         {tab === "table" && (
           <TableView
