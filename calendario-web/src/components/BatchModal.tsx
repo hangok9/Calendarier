@@ -129,7 +129,7 @@ export default function BatchModal({
             >
               {people.map((p) => (
                 <option key={p.id} value={p.id}>
-                  {p.name}
+                  {p.display_name || p.name}
                 </option>
               ))}
             </select>

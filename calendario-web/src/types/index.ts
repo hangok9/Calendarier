@@ -12,6 +12,9 @@ export interface Person {
   calendar_id: string
   name: string
   sort_order: number
+  display_name?: string
+  role?: string
+  alias?: string
 }
 
 export interface User {

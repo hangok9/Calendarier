@@ -22,10 +22,11 @@ export default function CalendarPage() {
   const [people, setPeople] = useState<Person[]>([])
   const [availability, setAvailability] = useState<Availability[]>([])
   const [personId, setPersonId] = useState<string | null>(null)
+  const [myRole, setMyRole] = useState<string>("member")
   const [currentView, setCurrentView] = useState<ViewType>("calendario")
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
+  const loadData = useCallback(() => {
     fetch("/api/auth/me")
       .then((r) => r.json())
       .then((data) => {
@@ -43,11 +44,14 @@ export default function CalendarPage() {
           setPeople(data.people || [])
           setAvailability(data.availability || [])
           setPersonId(data.person_id || null)
+          setMyRole(data.my_role || "member")
         }
       })
       .catch(() => router.push(`/`))
       .finally(() => setLoading(false))
   }, [slug, router])
+
+  useEffect(() => { loadData() }, [loadData])
 
   const handleLogout = useCallback(async () => {
     await fetch("/api/auth/logout", { method: "POST" })
@@ -67,7 +71,7 @@ export default function CalendarPage() {
   if (!session || !calendar) return null
 
   const currentPerson = people.find((p) => p.id === personId)
-  const personName = currentPerson?.name || session.username
+  const personName = currentPerson?.display_name || currentPerson?.name || currentPerson?.alias || session.username
 
   const totalDays = calendar.months.reduce((sum, m) => {
     return sum + new Date(calendar.year, m, 0).getDate()
@@ -89,7 +93,14 @@ export default function CalendarPage() {
 
       <main style={{ maxWidth: "80rem", margin: "0 auto", padding: "5rem 1.5rem 2rem", position: "relative", zIndex: 1 }}>
         <div className={`view ${currentView === "setup" ? "active" : ""}`}>
-          <SetupView calendar={calendar} people={people} />
+          <SetupView
+            calendar={calendar}
+            people={people}
+            myRole={myRole}
+            myPersonId={personId}
+            session={session}
+            onDataChange={loadData}
+          />
         </div>
 
         <div className={`view ${currentView === "calendario" ? "active" : ""}`}>

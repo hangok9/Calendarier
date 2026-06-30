@@ -40,6 +40,8 @@ export default function TableView({
     return result
   }, [calendar])
 
+  const personList = useMemo(() => people, [people])
+
   async function handleCellClick(personId: string, date: Date, currentCode: string | null) {
     const dateStr = date.toISOString().split("T")[0]
     const codes = ["", ...CODES]
@@ -58,93 +60,116 @@ export default function TableView({
   }
 
   let lastMonth = 0
+  const colWidth = `max(3.5rem, ${100 / Math.max(people.length + 3, 5)}vw)`
 
   return (
-    <div className="surface-elevated stagger" style={{ padding: "1.25rem" }}>
-      <div className="table-wrap">
-        <table className="cal-table">
-          <thead>
-            <tr>
-              <th style={{ minWidth: "5.5rem" }}>Fecha</th>
-              <th style={{ minWidth: "3rem" }}>Dia</th>
-              {people.map((p) => (
-                <th key={p.id}>{p.name}</th>
-              ))}
-              <th style={{ minWidth: "3.5rem", color: "var(--accent)" }}>Libres</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => {
-              const showMonth = row.month !== lastMonth
-              lastMonth = row.month
+    <div className="surface-elevated stagger" style={{ padding: "1.25rem", position: "relative" }}>
+      <div className="table-wrap" style={{ overflowX: "auto", WebkitOverflowScrolling: "touch", margin: "-0.5rem", padding: "0.5rem" }}>
+        <div style={{ minWidth: people.length > 5 ? `${people.length * 4 + 12}rem` : "100%" }}>
+          <table className="cal-table" style={{ width: "100%", borderCollapse: "separate", borderSpacing: 0 }}>
+            <thead>
+              <tr>
+                <th style={{ position: "sticky", left: 0, zIndex: 3, background: "var(--surface)", minWidth: "5rem", width: colWidth, borderRight: "1px solid var(--border)", boxShadow: "2px 0 4px rgba(0,0,0,0.05)" }}>Fecha</th>
+                <th style={{ position: "sticky", left: "5rem", zIndex: 3, background: "var(--surface)", minWidth: "3.5rem", width: colWidth, borderRight: "1px solid var(--border)" }}>Dia</th>
+                {personList.map((p) => (
+                  <th key={p.id} style={{ minWidth: "4rem", width: colWidth, padding: "0.5rem 0.25rem", fontSize: "clamp(0.625rem, 1.5vw, 0.8125rem)", lineHeight: 1.2, textAlign: "center" }}>
+                    <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "5rem" }}>
+                      {p.display_name || p.name}
+                    </div>
+                  </th>
+                ))}
+                <th style={{ position: "sticky", right: 0, zIndex: 3, background: "var(--surface)", minWidth: "3.5rem", width: colWidth, color: "var(--accent)", boxShadow: "-2px 0 4px rgba(0,0,0,0.05)" }}>Libres</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => {
+                const showMonth = row.month !== lastMonth
+                lastMonth = row.month
 
-              const freeCount = people.filter(
-                (p) => !getAvailCode(p.id, row.dateStr, availability)
-              ).length
+                const freeCount = people.filter(
+                  (p) => !getAvailCode(p.id, row.dateStr, availability)
+                ).length
 
-              return (
-                <>
-                  {showMonth && (
-                    <tr className="month-divider" key={`m-${row.month}`}>
-                      <td colSpan={3 + people.length}>
-                        {MONTH_NAMES[row.month]} {calendar.year}
+                return (
+                  <>
+                    {showMonth && (
+                      <tr className="month-divider" key={`m-${row.month}`}>
+                        <td colSpan={3 + people.length} style={{ position: "sticky", left: 0, background: "var(--accent-soft)" }}>
+                          {MONTH_NAMES[row.month]} {calendar.year}
+                        </td>
+                      </tr>
+                    )}
+                    <tr key={row.dateStr} style={{ borderBottom: "1px solid var(--border-light)" }}>
+                      <td style={{ position: "sticky", left: 0, zIndex: 1, background: "var(--surface)", borderRight: "1px solid var(--border)", fontWeight: 500, fontSize: "0.75rem", whiteSpace: "nowrap" }}>
+                        {row.dateStr.slice(5)}
+                      </td>
+                      <td style={{ position: "sticky", left: "5rem", zIndex: 1, background: "var(--surface)", borderRight: "1px solid var(--border)", fontSize: "0.75rem", color: row.dayName === "Sab" || row.dayName === "Dom" ? "#EF4444" : "var(--text-secondary)" }}>
+                        {row.dayName}
+                      </td>
+                      {personList.map((person) => {
+                        const code = getAvailCode(person.id, row.dateStr, availability)
+                        const isFree = !code
+                        const displayName = person.display_name || person.name
+                        return (
+                          <td
+                            key={person.id}
+                            onClick={() => handleCellClick(person.id, row.date, code)}
+                            style={{ cursor: "pointer", textAlign: "center", padding: "0.25rem", minHeight: "44px", verticalAlign: "middle" }}
+                          >
+                            {isFree ? (
+                              <span
+                                className="badge"
+                                style={{
+                                  background: "var(--green)",
+                                  color: "#fff",
+                                  fontSize: "0.5625rem",
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  width: "1.5rem",
+                                  height: "1.5rem",
+                                }}
+                              >
+                                ✓
+                              </span>
+                            ) : (
+                              <span
+                                className="badge"
+                                style={{
+                                  background: CODE_COLORS[code]?.bg || "var(--gray)",
+                                  color: "#fff",
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  minWidth: "1.5rem",
+                                  height: "1.5rem",
+                                  padding: "0 0.375rem",
+                                }}
+                              >
+                                {code}
+                              </span>
+                            )}
+                          </td>
+                        )
+                      })}
+                      <td style={{ position: "sticky", right: 0, zIndex: 1, background: "var(--surface)", textAlign: "center", fontWeight: 700, fontSize: "0.875rem", boxShadow: "-2px 0 4px rgba(0,0,0,0.03)" }}>
+                        <span style={{ color: freeCount === people.length ? "var(--emerald)" : "var(--text)", display: "inline-flex", alignItems: "center", justifyContent: "center", minHeight: "44px" }}>
+                          {freeCount}
+                        </span>
                       </td>
                     </tr>
-                  )}
-                  <tr key={row.dateStr}>
-                    <td>{row.dateStr.slice(5)}</td>
-                    <td>{row.dayName}</td>
-                    {people.map((person) => {
-                      const code = getAvailCode(person.id, row.dateStr, availability)
-                      const isFree = !code
-                      return (
-                        <td
-                          key={person.id}
-                          onClick={() => handleCellClick(person.id, row.date, code)}
-                          style={{ cursor: "pointer" }}
-                        >
-                          {isFree ? (
-                            <span
-                              className="badge"
-                              style={{
-                                background: "var(--green)",
-                                color: "#fff",
-                                fontSize: "0.5625rem",
-                              }}
-                            >
-                              ✓
-                            </span>
-                          ) : (
-                            <span
-                              className="badge"
-                              style={{
-                                background: CODE_COLORS[code]?.bg || "var(--gray)",
-                                color: "#fff",
-                              }}
-                            >
-                              {code}
-                            </span>
-                          )}
-                        </td>
-                      )
-                    })}
-                    <td>
-                      <span
-                        style={{
-                          fontWeight: 700,
-                          color: freeCount === people.length ? "var(--emerald)" : "var(--text)",
-                        }}
-                      >
-                        {freeCount}
-                      </span>
-                    </td>
-                  </tr>
-                </>
-              )
-            })}
-          </tbody>
-        </table>
+                  </>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
+      {people.length === 0 && (
+        <div style={{ textAlign: "center", padding: "2rem", color: "var(--text-muted)", fontSize: "0.875rem" }}>
+          No hay personas registradas todavia
+        </div>
+      )}
     </div>
   )
 }
