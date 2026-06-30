@@ -11,7 +11,7 @@ export async function GET() {
       const { data, error } = await supabase
         .from("calendars")
         .select(`
-          slug, name, year, months,
+          id, slug, name, year, months,
           creator:created_by(username)
         `)
         .order("name")
