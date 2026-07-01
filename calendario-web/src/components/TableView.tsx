@@ -79,8 +79,8 @@ export default function TableView({
           <table className="cal-table" style={{ width: "100%", borderCollapse: "separate", borderSpacing: 0 }}>
             <thead>
               <tr>
-                <th style={{ position: "sticky", left: 0, zIndex: 3, background: "var(--surface)", minWidth: "5rem", width: colWidth, borderRight: "1px solid var(--border)", boxShadow: "2px 0 4px rgba(0,0,0,0.05)" }}>Fecha</th>
-                <th style={{ position: "sticky", left: "5rem", zIndex: 3, background: "var(--surface)", minWidth: "3.5rem", width: colWidth, borderRight: "1px solid var(--border)" }}>Dia</th>
+                <th style={{ position: "sticky", left: 0, zIndex: 3, background: "var(--surface)", minWidth: "5rem", width: colWidth, backgroundClip: "padding-box", boxShadow: "2px 0 4px rgba(0,0,0,0.05), 1px 0 0 var(--border)" }}>Fecha</th>
+                <th style={{ position: "sticky", left: "5rem", zIndex: 3, background: "var(--surface)", minWidth: "3.5rem", width: colWidth, backgroundClip: "padding-box", boxShadow: "1px 0 0 var(--border)" }}>Dia</th>
                 {personList.map((p) => (
                   <th key={p.id} style={{ minWidth: "4rem", width: colWidth, padding: "0.5rem 0.25rem", fontSize: "clamp(0.625rem, 1.5vw, 0.8125rem)", lineHeight: 1.2, textAlign: "center" }}>
                     <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "5rem" }}>
@@ -88,7 +88,7 @@ export default function TableView({
                     </div>
                   </th>
                 ))}
-                <th style={{ position: "sticky", right: 0, zIndex: 3, background: "var(--surface)", minWidth: "3.5rem", width: colWidth, color: "var(--accent)", boxShadow: "-2px 0 4px rgba(0,0,0,0.05)" }}>Libres</th>
+                <th style={{ position: "sticky", right: 0, zIndex: 3, background: "var(--surface)", minWidth: "3.5rem", width: colWidth, color: "var(--accent)", backgroundClip: "padding-box", boxShadow: "-2px 0 4px rgba(0,0,0,0.05), -1px 0 0 var(--border)" }}>Libres</th>
               </tr>
             </thead>
             <tbody>
@@ -110,10 +110,10 @@ export default function TableView({
                       </tr>
                     )}
                     <tr style={{ borderBottom: "1px solid var(--border-light)" }}>
-                      <td style={{ position: "sticky", left: 0, zIndex: 1, background: "var(--surface)", borderRight: "1px solid var(--border)", fontWeight: 500, fontSize: "0.75rem", whiteSpace: "nowrap" }}>
+                      <td style={{ position: "sticky", left: 0, zIndex: 1, background: "var(--surface)", backgroundClip: "padding-box", fontWeight: 500, fontSize: "0.75rem", whiteSpace: "nowrap", boxShadow: "1px 0 0 var(--border)" }}>
                         {row.dateStr.slice(5)}
                       </td>
-                      <td style={{ position: "sticky", left: "5rem", zIndex: 1, background: "var(--surface)", borderRight: "1px solid var(--border)", fontSize: "0.75rem", color: row.dayName === "Sab" || row.dayName === "Dom" ? "#EF4444" : "var(--text-secondary)" }}>
+                      <td style={{ position: "sticky", left: "5rem", zIndex: 1, background: "var(--surface)", backgroundClip: "padding-box", fontSize: "0.75rem", color: row.dayName === "Sab" || row.dayName === "Dom" ? "#EF4444" : "var(--text-secondary)", boxShadow: "1px 0 0 var(--border)" }}>
                         {row.dayName}
                       </td>
                       {personList.map((person) => {
@@ -171,7 +171,7 @@ export default function TableView({
                           </td>
                         )
                       })}
-                      <td style={{ position: "sticky", right: 0, zIndex: 1, background: "var(--surface)", textAlign: "center", fontWeight: 700, fontSize: "0.875rem", boxShadow: "-2px 0 4px rgba(0,0,0,0.03)" }}>
+                      <td style={{ position: "sticky", right: 0, zIndex: 1, background: "var(--surface)", backgroundClip: "padding-box", textAlign: "center", fontWeight: 700, fontSize: "0.875rem", boxShadow: "-2px 0 4px rgba(0,0,0,0.03), -1px 0 0 var(--border)" }}>
                         <span style={{ color: freeCount === people.length ? "var(--emerald)" : "var(--text)", display: "inline-flex", alignItems: "center", justifyContent: "center", minHeight: "44px" }}>
                           {freeCount}
                         </span>
