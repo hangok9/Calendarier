@@ -1,5 +1,7 @@
 # Calendarier Web — Lista de Tareas
 
+> **Estado: Completado ~95%** — Solo quedan mejoras UX, mobile-first y producción.
+
 ## Leyenda
 - ✅ Completado
 - 🔄 En progreso
@@ -9,86 +11,106 @@
 
 ## Fase 1: Base del proyecto
 
-- [ ] ⬜ **Inicializar Next.js + Tailwind + TypeScript**
+- [x] ✅ **Inicializar Next.js + Tailwind + TypeScript**
   - `npx create-next-app` en `calendario-web/`
   - Tailwind CSS configurado
   - ESLint + tsconfig correctos
-- [ ] ⬜ **Configurar variables de entorno** (`.env.local`)
-  - `NEXT_PUBLIC_SUPABASE_URL`
-  - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-  - `JWT_SECRET`
-- [ ] ⬜ **Crear archivos base**
+- [x] ✅ **Configurar variables de entorno** (`.env.local`)
+- [x] ✅ **Crear archivos base**
   - `src/lib/supabase.ts` — Cliente Supabase
   - `src/lib/auth.ts` — JWT helpers (crear/verificar con `jose`)
-  - `src/lib/constants.ts` — Codigos, colores, emojis, meses
+  - `src/lib/constants.ts` — Códigos, colores, meses
   - `src/types/index.ts` — Tipos TypeScript
 
 ## Fase 2: Base de datos
 
-- [ ] ⬜ **Subir schema.sql a Supabase** (lo haces tu)
-- [ ] ⬜ **Seed: 3 calendarios + personas** (lo haces tu con el SQL)
-- [ ] ⬜ **Verificar conexion Supabase** desde el codigo
+- [x] ✅ **Subir schema.sql a Supabase** (lo haces tu)
+- [x] ✅ **Seed: 3 calendarios + personas**
+- [x] ✅ **Verificar conexion Supabase** desde el codigo
 
 ## Fase 3: API — Auth
 
-- [ ] ⬜ `POST /api/auth/login` — Validar slug + name + password, devolver JWT
-- [ ] ⬜ `POST /api/auth/logout` — Limpiar cookie
-- [ ] ⬜ `GET /api/auth/me` — Verificar sesion actual
+- [x] ✅ `POST /api/auth/login` — Validar slug + name + password, devolver JWT
+- [x] ✅ `POST /api/auth/logout` — Limpiar cookie
+- [x] ✅ `GET /api/auth/me` — Verificar sesion actual
+- [x] ✅ `POST /api/auth/register` — Crear cuenta con email
+- [x] ✅ `POST /api/auth/change-password` — Cambiar contraseña
+- [x] ✅ `POST /api/auth/forgot-password` — Solicitar reset por email
+- [x] ✅ `POST /api/auth/reset-password` — Restablecer con token
 
 ## Fase 4: API — Calendarios
 
-- [ ] ⬜ `GET /api/calendars` — Listar calendarios publicos
-- [ ] ⬜ `GET /api/calendars/[slug]` — Obtener calendario + personas + availability
-- [ ] ⬜ `POST /api/calendars/[slug]/availability` — Marcar persona+fecha
-- [ ] ⬜ `POST /api/calendars/[slug]/batch` — Marcar rango de dias
-- [ ] ⬜ `DELETE /api/calendars/[slug]/clear` — Limpiar todo
+- [x] ✅ `GET /api/calendars` — Listar calendarios publicos
+- [x] ✅ `GET /api/calendars/[slug]` — Obtener calendario + personas + availability
+- [x] ✅ `POST /api/calendars/[slug]/availability` — Marcar persona+fecha
+- [x] ✅ `POST /api/calendars/[slug]/batch` — Marcar rango de dias
+- [x] ✅ `DELETE /api/calendars/[slug]/clear` — Limpiar todo
+- [x] ✅ `POST /api/calendars` — Crear calendario (slug auto-generado)
+- [x] ✅ `DELETE /api/calendars/[slug]` — Eliminar calendario (solo creador)
+- [x] ✅ `PATCH /api/calendars/[slug]` — Editar nombre, año, meses
 
-## Fase 5: API — Nuevas features
+## Fase 5: API — Personas
 
-- [ ] ⬜ `GET /api/calendars/[slug]/events` — Listar eventos personalizados
-- [ ] ⬜ `POST /api/calendars/[slug]/events` — Crear evento
-- [ ] ⬜ `DELETE /api/calendars/[slug]/events/[id]` — Eliminar evento
-- [ ] ⬜ `GET /api/calendars/[slug]/plans` — Listar planes de grupo
-- [ ] ⬜ `POST /api/calendars/[slug]/plans` — Crear plan
-- [ ] ⬜ `POST /api/calendars/[slug]/plans/[id]/respond` — Responder a plan
+- [x] ✅ `GET /api/calendars/[slug]/people` — Listar miembros
+- [x] ✅ `POST /api/calendars/[slug]/people` — Añadir por username
+- [x] ✅ `DELETE /api/calendars/[slug]/people/[personId]` — Expulsar/salirse
+- [x] ✅ `PATCH /api/calendars/[slug]/people/[personId]` — Cambiar alias/rol
 
-## Fase 6: Frontend — Login
+## Fase 6: API — Eventos y Planes
 
-- [ ] ⬜ **Pagina `/login`** — Formulario: seleccionar calendario + nombre + contrasena
-- [ ] ⬜ **Proteccion de rutas** — Redirigir a login si no hay sesion
-- [ ] ⬜ **Layout protegido** — Navbar + verificacion de sesion en cada ruta
+- [x] ✅ `GET /api/calendars/[slug]/events` — Listar eventos personalizados
+- [x] ✅ `POST /api/calendars/[slug]/events` — Crear evento
+- [x] ✅ `DELETE /api/calendars/[slug]/events/[id]` — Eliminar evento
+- [x] ✅ `GET /api/calendars/[slug]/plans` — Listar planes de grupo
+- [x] ✅ `POST /api/calendars/[slug]/plans` — Crear plan
+- [x] ✅ `POST /api/calendars/[slug]/plans/[id]/respond` — Responder a plan
 
-## Fase 7: Frontend — Vistas principales
+## Fase 7: Frontend — Login y Dashboard
 
-- [ ] ⬜ **`Nav.tsx`** — Navegacion desktop + mobile (desde template)
-- [ ] ⬜ **`ThemeToggle.tsx`** — Toggle dark/light mode
-- [ ] ⬜ **`SetupView.tsx`** — Configurar ano, meses, grupo, personas
-- [ ] ⬜ **`CalendarView.tsx`** — Contenedor con tabs (Cuadricula + Tabla)
-- [ ] ⬜ **`GridView.tsx`** — Cuadricula semanal con chips de colores
-- [ ] ⬜ **`TableView.tsx`** — Tabla fechas x personas con badges
-- [ ] ⬜ **`ResumenView.tsx`** — Dashboard: stats cards + umbrales + distribucion
-- [ ] ⬜ **`Legend.tsx`** — Leyenda de codigos de colores
-- [ ] ⬜ **`BatchModal.tsx`** — Modal para marcar rango de dias
+- [x] ✅ **Pagina `/login`** — Formulario con username + password
+- [x] ✅ **Proteccion de rutas** — Redirigir a login si no hay sesion
+- [x] ✅ **Dashboard** — Lista de calendarios del usuario con rol + botón crear
 
-## Fase 8: Frontend — Nuevas features
+## Fase 8: Frontend — Vistas del calendario
 
-- [ ] ⬜ **`PlanesView.tsx`** — Vista de planes de grupo con respuestas
-- [ ] ⬜ **`CreatePlanModal.tsx`** — Modal para crear nuevo plan
-- [ ] ⬜ **`EventosView.tsx`** — Vista de eventos personalizados con horarios
+- [x] ✅ **`Nav.tsx`** — Navegacion desktop + mobile
+- [x] ✅ **`SetupView.tsx`** — Configurar grupo, personas, códigos, alias
+- [x] ✅ **`CalendarView.tsx`** — Contenedor con tabs (Cuadricula + Tabla + Semana)
+- [x] ✅ **`GridView.tsx`** — Cuadricula semanal con chips + drag batch
+- [x] ✅ **`TableView.tsx`** — Tabla fechas x personas con badges
+- [x] ✅ **`WeekView.tsx`** — Vista semanal con drag batch
+- [x] ✅ **`ResumenView.tsx`** — Dashboard: stats + umbrales + distribucion
+- [x] ✅ **`BatchModal.tsx`** — Modal para marcar rango de dias
+- [x] ✅ **`PlanesView.tsx`** — Vista de planes de grupo con respuestas
+- [x] ✅ **`EventosView.tsx`** — Vista de eventos personalizados con horarios
 
-## Fase 9: Integracion
+## Fase 9: Email e Invitaciones
 
-- [ ] ⬜ **Conectar SetupView con API** — Guardar configuracion en BD
-- [ ] ⬜ **Conectar CalendarView con API** — Cargar/marcar disponibilidad real
-- [ ] ⬜ **Conectar ResumenView con API** — Metricas desde datos reales
-- [ ] ⬜ **Conectar PlanesView con API** — Crear/responder planes
-- [ ] ⬜ **Conectar EventosView con API** — Crear/eliminar eventos
+- [x] ✅ **`src/lib/email.ts`** — 3 funciones (welcome, invitation, reset)
+- [x] ✅ **Email de bienvenida** al registrarse
+- [x] ✅ **Email de invitación** al añadir persona al calendario
+- [x] ✅ **Email de recuperación** de contraseña
+- [x] ✅ **Invitación por username** desde SetupView
 
 ## Fase 10: Despliegue
 
-- [ ] ⬜ **Inicializar Git** (`git init`)
-- [ ] ⬜ **Crear repositorio en GitHub**
+- [x] ✅ **Inicializar Git** (`git init`)
+- [x] ✅ **Crear repositorio en GitHub**
 - [ ] ⬜ **Configurar Vercel** — Conectar con GitHub
-- [ ] ⬜ **Variables de entorno en Vercel** — Supabase URL + keys + JWT_SECRET
+- [ ] ⬜ **Variables de entorno en Vercel** — 6 variables
 - [ ] ⬜ **Deploy** — Primer deploy exitoso
-- [ ] ⬜ **Actualizar contrasenas reales** en Supabase
+- [ ] ⬜ **JWT_SECRET real** (no el de desarrollo)
+
+## ⬜ Pendiente aún
+
+- [ ] **Mobile-First responsive** — GridView adaptativo, touch targets 44×44px
+- [ ] **Modo "pintar" toggle** — Activar/desactivar arrastre
+- [ ] **Auto-link de invitaciones** al registrarse
+- [ ] **ThemeToggle** — Dark/light mode
+- [ ] **Página 404** personalizada
+- [ ] **Loading skeletons** (vs texto "Cargando...")
+- [ ] **Toasts/notificaciones**
+- [ ] **Tests** — API y componentes
+- [ ] **Paginación**
+- [ ] **Sentry** — Monitoreo de errores
+- [ ] **Analytics**

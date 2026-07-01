@@ -1,8 +1,14 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { createEventSchema } from "@/lib/schemas"
+import type { z } from "zod"
 import { CODES, CODE_SHORT, CODE_COLORS } from "@/lib/constants"
 import type { Calendar, Person } from "@/types"
+
+type CreateEventForm = z.infer<typeof createEventSchema>
 
 interface CustomEventItem {
   id: string
@@ -30,12 +36,10 @@ export default function EventosView({
   const [showCreate, setShowCreate] = useState(false)
 
   // Create form
-  const [eventPersonId, setEventPersonId] = useState(session.person_id)
-  const [eventDate, setEventDate] = useState("")
-  const [startTime, setStartTime] = useState("")
-  const [endTime, setEndTime] = useState("")
-  const [eventLabel, setEventLabel] = useState("")
-  const [eventCode, setEventCode] = useState("")
+  const eventForm = useForm<CreateEventForm>({
+    resolver: zodResolver(createEventSchema),
+    defaultValues: { personId: session.person_id, date: "", startTime: "", endTime: "", label: "", code: "" },
+  })
 
   async function loadEvents(date?: string) {
     setLoading(true)
@@ -56,27 +60,22 @@ export default function EventosView({
     loadEvents(selectedDate || undefined)
   }, [calendar.slug, selectedDate])
 
-  async function handleCreate(e: React.FormEvent) {
-    e.preventDefault()
+  async function handleCreate(data: CreateEventForm) {
     const res = await fetch(`/api/calendars/${calendar.slug}/events`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        person_id: eventPersonId,
-        date: eventDate,
-        start_time: startTime || null,
-        end_time: endTime || null,
-        label: eventLabel || null,
-        code: eventCode || null,
+        person_id: data.personId,
+        date: data.date,
+        start_time: data.startTime || null,
+        end_time: data.endTime || null,
+        label: data.label || null,
+        code: data.code || null,
       }),
     })
     if (res.ok) {
       setShowCreate(false)
-      setEventDate("")
-      setStartTime("")
-      setEndTime("")
-      setEventLabel("")
-      setEventCode("")
+      eventForm.reset()
       loadEvents(selectedDate || undefined)
     }
   }
@@ -138,7 +137,7 @@ export default function EventosView({
             style={{ fontSize: "0.875rem" }}
             onClick={() => {
               setShowCreate(true)
-              setEventDate(selectedDate || new Date().toISOString().split("T")[0])
+              eventForm.setValue("date", selectedDate || new Date().toISOString().split("T")[0])
             }}
           >
             + Nuevo evento
@@ -155,8 +154,9 @@ export default function EventosView({
             Crear evento personalizado
           </h3>
           <form
-            onSubmit={handleCreate}
+            onSubmit={eventForm.handleSubmit(handleCreate)}
             style={{ display: "flex", flexDirection: "column", gap: "1rem" }}
+            noValidate
           >
             <div style={{ display: "flex", gap: "0.75rem" }}>
               <div style={{ flex: 1 }}>
@@ -168,14 +168,15 @@ export default function EventosView({
                     color: "var(--text-secondary)",
                     marginBottom: "0.25rem",
                   }}
+                  htmlFor="ev-person"
                 >
                   Persona
                 </label>
                 <select
+                  id="ev-person"
                   className="input-field"
-                  value={eventPersonId}
-                  onChange={(e) => setEventPersonId(e.target.value)}
                   style={{ appearance: "auto" }}
+                  {...eventForm.register("personId")}
                 >
                   {people.map((p) => (
                     <option key={p.id} value={p.id}>
@@ -193,15 +194,16 @@ export default function EventosView({
                     color: "var(--text-secondary)",
                     marginBottom: "0.25rem",
                   }}
+                  htmlFor="ev-date"
                 >
                   Fecha
                 </label>
                 <input
+                  id="ev-date"
                   className="input-field"
                   type="date"
-                  value={eventDate}
-                  onChange={(e) => setEventDate(e.target.value)}
-                  required
+                  aria-invalid={eventForm.formState.errors.date ? "true" : "false"}
+                  {...eventForm.register("date")}
                 />
               </div>
             </div>
@@ -216,14 +218,15 @@ export default function EventosView({
                     color: "var(--text-secondary)",
                     marginBottom: "0.25rem",
                   }}
+                  htmlFor="ev-start"
                 >
                   Hora inicio (opcional)
                 </label>
                 <input
+                  id="ev-start"
                   className="input-field"
                   type="time"
-                  value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
+                  {...eventForm.register("startTime")}
                 />
               </div>
               <div style={{ flex: 1 }}>
@@ -235,14 +238,15 @@ export default function EventosView({
                     color: "var(--text-secondary)",
                     marginBottom: "0.25rem",
                   }}
+                  htmlFor="ev-end"
                 >
                   Hora fin (opcional)
                 </label>
                 <input
+                  id="ev-end"
                   className="input-field"
                   type="time"
-                  value={endTime}
-                  onChange={(e) => setEndTime(e.target.value)}
+                  {...eventForm.register("endTime")}
                 />
               </div>
             </div>
@@ -257,14 +261,15 @@ export default function EventosView({
                     color: "var(--text-secondary)",
                     marginBottom: "0.25rem",
                   }}
+                  htmlFor="ev-label"
                 >
                   Etiqueta (ej: Curso, Medico)
                 </label>
                 <input
+                  id="ev-label"
                   className="input-field"
                   placeholder="Ej: Curso de formacion"
-                  value={eventLabel}
-                  onChange={(e) => setEventLabel(e.target.value)}
+                  {...eventForm.register("label")}
                 />
               </div>
               <div style={{ flex: 1 }}>
@@ -276,14 +281,15 @@ export default function EventosView({
                     color: "var(--text-secondary)",
                     marginBottom: "0.25rem",
                   }}
+                  htmlFor="ev-code"
                 >
                   Codigo (opcional)
                 </label>
                 <select
+                  id="ev-code"
                   className="input-field"
-                  value={eventCode}
-                  onChange={(e) => setEventCode(e.target.value)}
                   style={{ appearance: "auto" }}
+                  {...eventForm.register("code")}
                 >
                   <option value="">Sin codigo</option>
                   {CODES.map((c) => (

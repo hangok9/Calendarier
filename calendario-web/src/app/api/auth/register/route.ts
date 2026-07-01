@@ -2,32 +2,13 @@ import { NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
 import { supabase } from "@/lib/supabase"
 import { createSession } from "@/lib/auth"
+import { tryCatch, conflict, badRequest } from "@/lib/errors"
+import { validate, registerSchema } from "@/lib/validate"
 import { sendWelcomeEmail } from "@/lib/email"
 
 export async function POST(request: Request) {
-  try {
-    const { email, username, password, confirmPassword } = await request.json()
-
-    if (!username || !password || !confirmPassword) {
-      return NextResponse.json(
-        { error: "Todos los campos son requeridos" },
-        { status: 400 }
-      )
-    }
-
-    if (password !== confirmPassword) {
-      return NextResponse.json(
-        { error: "Las contrasenas no coinciden" },
-        { status: 400 }
-      )
-    }
-
-    if (password.length < 6) {
-      return NextResponse.json(
-        { error: "La contrasena debe tener al menos 6 caracteres" },
-        { status: 400 }
-      )
-    }
+  return tryCatch(async () => {
+    const { email, username, password } = validate(registerSchema, await request.json())
 
     const usernameLower = username.toLowerCase().trim()
 
@@ -37,12 +18,7 @@ export async function POST(request: Request) {
       .eq("username", usernameLower)
       .maybeSingle()
 
-    if (existing) {
-      return NextResponse.json(
-        { error: "El nombre de usuario ya esta registrado" },
-        { status: 409 }
-      )
-    }
+    if (existing) throw conflict("El nombre de usuario ya esta registrado")
 
     const hash = await bcrypt.hash(password, 10)
 
@@ -54,13 +30,9 @@ export async function POST(request: Request) {
 
     if (createError || !user) {
       console.error("Create user error:", createError)
-      return NextResponse.json(
-        { error: "Error al crear el usuario" },
-        { status: 500 }
-      )
+      throw badRequest("Error al crear el usuario")
     }
 
-    // Link to existing people entries (same name, case-insensitive)
     const { data: matchingPeople } = await supabase
       .from("people")
       .select("id, calendar_id")
@@ -72,26 +44,17 @@ export async function POST(request: Request) {
       await supabase.from("people").update({ user_id: user.id }).in("id", ids)
     }
 
-    // Send welcome email
     if (user.email) {
-      try {
-        await sendWelcomeEmail(user.email, user.username)
-      } catch (e) {
+      sendWelcomeEmail(user.email, user.username).catch((e) =>
         console.error("Welcome email error:", e)
-      }
+      )
     }
 
-    await createSession({
-      user_id: user.id,
-      username: user.username,
-    })
+    await createSession({ user_id: user.id, username: user.username })
 
     return NextResponse.json({
       success: true,
       user: { id: user.id, username: user.username, email: user.email },
     })
-  } catch (error) {
-    console.error("Register error:", error)
-    return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 })
-  }
+  })
 }

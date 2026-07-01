@@ -1,8 +1,14 @@
 "use client"
 
 import { useState } from "react"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { batchAvailabilitySchema } from "@/lib/schemas"
+import type { z } from "zod"
 import { CODES, CODE_SHORT } from "@/lib/constants"
 import type { Calendar, Person } from "@/types"
+
+type BatchForm = z.infer<typeof batchAvailabilitySchema>
 
 export default function BatchModal({
   calendar,
@@ -17,40 +23,46 @@ export default function BatchModal({
   onClose: () => void
   onComplete: () => void
 }) {
-  const [personId, setPersonId] = useState(session.person_id)
   const LIBRE = "__libre__"
-  const [code, setCode] = useState<string>(CODES[0])
-  const [startDate, setStartDate] = useState("")
-  const [endDate, setEndDate] = useState("")
-  const [loading, setLoading] = useState(false)
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors, isSubmitting },
+    setError: setFormError,
+  } = useForm<BatchForm>({
+    resolver: zodResolver(batchAvailabilitySchema),
+    defaultValues: { personId: session.person_id, code: CODES[0], startDate: "", endDate: "" },
+  })
+
+  const selectedCode = watch("code")
+  const isClear = selectedCode === LIBRE
   const [result, setResult] = useState<string | null>(null)
-  const isClear = code === LIBRE
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!startDate || !endDate) return
-    setLoading(true)
+  async function handleFormSubmit(data: BatchForm) {
     setResult(null)
-
     try {
       const res = await fetch(`/api/calendars/${calendar.slug}/batch`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ person_id: personId, code: isClear ? null : code, start_date: startDate, end_date: endDate }),
+        body: JSON.stringify({
+          person_id: data.personId,
+          code: data.code === LIBRE ? null : data.code,
+          start_date: data.startDate,
+          end_date: data.endDate,
+        }),
       })
 
-      const data = await res.json()
+      const response = await res.json()
 
       if (res.ok) {
-        setResult(isClear ? `Limpiados ${data.updated} dias` : `Actualizados ${data.updated} dias como ${code}`)
+        setResult(isClear ? `Limpiados ${response.updated} dias` : `Actualizados ${response.updated} dias como ${data.code}`)
         setTimeout(onComplete, 1500)
       } else {
-        setResult(data.error || "Error")
+        setResult(response.error || "Error")
       }
     } catch {
       setResult("Error de conexion")
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -90,11 +102,13 @@ export default function BatchModal({
         </h3>
 
         <form
-          onSubmit={handleSubmit}
+          onSubmit={handleSubmit(handleFormSubmit)}
           style={{ display: "flex", flexDirection: "column", gap: "1rem" }}
+          noValidate
         >
           <div>
             <label
+              htmlFor="batch-person"
               style={{
                 display: "block",
                 fontSize: "0.8125rem",
@@ -106,10 +120,11 @@ export default function BatchModal({
               Persona
             </label>
             <select
+              id="batch-person"
               className="input-field"
-              value={personId}
-              onChange={(e) => setPersonId(e.target.value)}
               style={{ appearance: "auto" }}
+              aria-invalid={errors.personId ? "true" : "false"}
+              {...register("personId")}
             >
               {people.map((p) => (
                 <option key={p.id} value={p.id}>
@@ -121,6 +136,7 @@ export default function BatchModal({
 
           <div>
             <label
+              htmlFor="batch-code"
               style={{
                 display: "block",
                 fontSize: "0.8125rem",
@@ -132,10 +148,10 @@ export default function BatchModal({
               Codigo
             </label>
             <select
+              id="batch-code"
               className="input-field"
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
               style={{ appearance: "auto" }}
+              {...register("code")}
             >
               <option value={LIBRE}>Limpiar (borrar codigo)</option>
               {CODES.map((c) => (
@@ -148,6 +164,7 @@ export default function BatchModal({
 
           <div>
             <label
+              htmlFor="batch-start"
               style={{
                 display: "block",
                 fontSize: "0.8125rem",
@@ -159,16 +176,17 @@ export default function BatchModal({
               Fecha inicio
             </label>
             <input
+              id="batch-start"
               className="input-field"
               type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              required
+              aria-invalid={errors.startDate ? "true" : "false"}
+              {...register("startDate")}
             />
           </div>
 
           <div>
             <label
+              htmlFor="batch-end"
               style={{
                 display: "block",
                 fontSize: "0.8125rem",
@@ -180,11 +198,11 @@ export default function BatchModal({
               Fecha fin
             </label>
             <input
+              id="batch-end"
               className="input-field"
               type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              required
+              aria-invalid={errors.endDate ? "true" : "false"}
+              {...register("endDate")}
             />
           </div>
 
@@ -216,10 +234,10 @@ export default function BatchModal({
             <button
               type="submit"
               className="btn btn-primary"
-              disabled={loading}
-              style={{ flex: 1, opacity: loading ? 0.6 : 1, background: isClear ? "var(--red)" : undefined }}
+              disabled={isSubmitting}
+              style={{ flex: 1, opacity: isSubmitting ? 0.6 : 1, background: isClear ? "var(--red)" : undefined }}
             >
-              {loading ? (isClear ? "Limpiando..." : "Aplicando...") : isClear ? "Limpiar" : "Aplicar"}
+              {isSubmitting ? (isClear ? "Limpiando..." : "Aplicando...") : isClear ? "Limpiar" : "Aplicar"}
             </button>
           </div>
         </form>

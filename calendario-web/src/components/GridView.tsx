@@ -1,16 +1,9 @@
 "use client"
 
-import { useMemo, useRef, useCallback, useState } from "react"
+import { useMemo, useRef, useState } from "react"
 import { DAY_NAMES, MONTH_NAMES, CODES, CODE_COLORS } from "@/lib/constants"
+import { useAvailMap, getCode } from "@/hooks/useAvailMap"
 import type { Calendar, Person, Availability } from "@/types"
-
-function getAvailCode(
-  personId: string,
-  dateStr: string,
-  availability: Availability[]
-): string | null {
-  return availability.find((a) => a.person_id === personId && a.date === dateStr)?.code ?? null
-}
 
 function nextCode(current: string | null): string | null {
   const codes = ["", ...CODES]
@@ -22,7 +15,7 @@ export default function GridView({
   calendar,
   people,
   availability,
-  session,
+  session: _session,
   onAvailabilityChange,
 }: {
   calendar: Calendar
@@ -37,6 +30,7 @@ export default function GridView({
   const dragRef = useRef<{ personId: string; code: string | null; cells: Set<string> } | null>(null)
   const didDrag = useRef(false)
   const gridRef = useRef<HTMLDivElement>(null)
+  const availMap = useAvailMap(availability)
 
   const monthData = useMemo(() => {
     if (!currentMonth) return null
@@ -71,28 +65,34 @@ export default function GridView({
     return { name: MONTH_NAMES[currentMonth], year, weeks }
   }, [currentMonth, calendar.year])
 
-  const updateAvailability = useCallback(async () => {
-    const r = await fetch(`/api/calendars/${calendar.slug}`)
-    const data = await r.json()
-    if (data.availability) onAvailabilityChange(data.availability)
-  }, [calendar.slug, onAvailabilityChange])
-
   async function handleCellClick(personId: string, date: Date, currentCode: string | null) {
     const dateStr = date.toISOString().split("T")[0]
-    const code = nextCode(currentCode)
+    const newCode = nextCode(currentCode)
+
+    // Optimistic update: apply locally immediately
+    const optimisticEntry: Availability = {
+      id: `opt-${personId}-${dateStr}`,
+      calendar_id: calendar.id,
+      person_id: personId,
+      date: dateStr,
+      code: newCode,
+      updated_at: new Date().toISOString(),
+    }
+    const idx = availability.findIndex((a) => a.person_id === personId && a.date === dateStr)
+    const updated = idx >= 0
+      ? [...availability.slice(0, idx), optimisticEntry, ...availability.slice(idx + 1)]
+      : [...availability, optimisticEntry]
+    onAvailabilityChange(updated)
 
     await fetch(`/api/calendars/${calendar.slug}/availability`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ person_id: personId, date: dateStr, code }),
+      body: JSON.stringify({ person_id: personId, date: dateStr, code: newCode }),
     })
-
-    await updateAvailability()
   }
 
   async function applyBatch(personId: string, code: string | null, dateStrs: string[]) {
     if (dateStrs.length === 0) return
-    // Use batch endpoint if multiple dates, else single
     if (dateStrs.length === 1) {
       await fetch(`/api/calendars/${calendar.slug}/availability`, {
         method: "POST",
@@ -111,7 +111,10 @@ export default function GridView({
         }),
       })
     }
-    await updateAvailability()
+    // Only full reload after batch operations (complex multi-date change)
+    const r = await fetch(`/api/calendars/${calendar.slug}`)
+    const data = await r.json()
+    if (data.availability) onAvailabilityChange(data.availability)
   }
 
   function handlePointerDown(personId: string, date: Date, currentCode: string | null) {
@@ -138,10 +141,6 @@ export default function GridView({
     }
   }
 
-  function formatDateStr(d: Date): string {
-    return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`
-  }
-
   if (!monthData) {
     return <div style={{ padding: "2rem", textAlign: "center", color: "var(--text-muted)" }}>No hay datos de mes</div>
   }
@@ -151,12 +150,14 @@ export default function GridView({
       {/* Month nav */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
         <button className="btn-ghost" style={{ padding: "0.5rem 0.75rem", fontSize: "0.8125rem", background: "none", border: "1px solid var(--border)", borderRadius: "var(--radius)", cursor: "pointer", color: "var(--text-secondary)", fontFamily: "var(--font-sans)", minHeight: "44px", visibility: currentMonthIndex > 0 ? "visible" : "hidden" }}
-          onClick={() => setMonthOffset((o) => Math.max(0, o - 1))}>
+          onClick={() => setMonthOffset((o) => Math.max(0, o - 1))}
+          aria-label="Mes anterior">
           ← Anterior
         </button>
         <span style={{ fontWeight: 700, fontSize: "1rem" }}>{monthData.name} {monthData.year}</span>
         <button className="btn-ghost" style={{ padding: "0.5rem 0.75rem", fontSize: "0.8125rem", background: "none", border: "1px solid var(--border)", borderRadius: "var(--radius)", cursor: "pointer", color: "var(--text-secondary)", fontFamily: "var(--font-sans)", minHeight: "44px", visibility: currentMonthIndex < calendar.months.length - 1 ? "visible" : "hidden" }}
-          onClick={() => setMonthOffset((o) => Math.min(calendar.months.length - 1, o + 1))}>
+          onClick={() => setMonthOffset((o) => Math.min(calendar.months.length - 1, o + 1))}
+          aria-label="Mes siguiente">
           Siguiente →
         </button>
       </div>
@@ -188,10 +189,9 @@ export default function GridView({
                   {cell.day}
                 </div>
                 {people.map((person) => {
-                  const code = getAvailCode(person.id, dateStr, availability)
+                  const code = getCode(availMap, person.id, dateStr)
                   const isFree = !code
                   const displayName = person.display_name || person.name
-                  const initial = displayName.charAt(0)
 
                   const style = isFree
                     ? { background: "var(--gray-soft)", color: "var(--text-muted)", dotColor: "var(--text-muted)" }
@@ -203,6 +203,14 @@ export default function GridView({
                       className="person-chip"
                       style={{ background: style.background, color: style.color, cursor: "pointer", minHeight: "28px", padding: "0.1875rem 0.375rem", fontSize: "0.625rem", borderRadius: "0.375rem", display: "flex", alignItems: "center", gap: "0.25rem", marginBottom: "0.125rem", userSelect: "none", WebkitUserSelect: "none", touchAction: "none" }}
                       title={`${displayName}${code ? ` (${code})` : ""}`}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault()
+                          handleCellClick(person.id, cell.date, code)
+                        }
+                      }}
                       onPointerDown={() => handlePointerDown(person.id, cell.date, code)}
                       onPointerEnter={() => handlePointerEnter(person.id, cell.date)}
                       onClick={() => {

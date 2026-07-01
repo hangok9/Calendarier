@@ -17,13 +17,15 @@ Contraseña de todos: **`username` + `2026`** (ej: `elias2026`, `pepe2026`)
 | oscar   | oscar2026      | Barcelona |
 | clara   | clara2026      | Barcelona |
 | anna    | anna2026       | Barcelona |
-| pepe    | pepe2026       | Barcelona, Cachorritas, Grupo |
+| pepe    | pepe2026       | Grupo, Barcelona, Cachorritas |
 | ivan    | ivan2026       | Barcelona |
 | yeray   | yeray2026      | Barcelona |
 | susanna | susanna2026    | Cachorritas |
 | zua     | zua2026        | Cachorritas |
 | anto    | anto2026       | Cachorritas |
 | cris    | cris2026       | Cachorritas |
+
+> Usuario `merino` eliminado en migration4 (PEPE ocupa su lugar en Grupo).
 
 ---
 
@@ -44,6 +46,8 @@ Contraseña de todos: **`username` + `2026`** (ej: `elias2026`, `pepe2026`)
 | Joan         | Almirall    | viñas       | joan    |
 | Grau         | Buch        | Rovira      | grau    |
 | Pol          | Baulenas    | Anton       | pol     |
+
+> ~~Merino~~ eliminado en migration4. Pepe (usuario `pepe`) ocupa su lugar.
 
 ### Barcelona
 

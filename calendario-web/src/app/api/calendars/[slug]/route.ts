@@ -1,171 +1,87 @@
 import { NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
-import { getSession } from "@/lib/auth"
+import { requireSession } from "@/lib/auth"
+import { tryCatch, forbidden, badRequest } from "@/lib/errors"
+import { validate, updateCalendarSchema } from "@/lib/validate"
+import { requireCalendarAccess, enrichPeople } from "@/services/calendar.service"
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ slug: string }> }
 ) {
-  try {
-    const session = await getSession()
-    if (!session) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 })
-    }
-
+  return tryCatch(async () => {
+    const session = await requireSession()
     const { slug } = await params
 
-    const { data: calendar, error: calError } = await supabase
-      .from("calendars")
-      .select("*")
-      .eq("slug", slug)
-      .single()
+    const { calendar, person } = await requireCalendarAccess(slug, session)
 
-    if (calError || !calendar) {
-      return NextResponse.json({ error: "Calendario no encontrado" }, { status: 404 })
-    }
+    const [{ data: people }, { data: availability }] = await Promise.all([
+      supabase.from("people").select("*").eq("calendar_id", calendar.id).order("sort_order"),
+      supabase.from("availability").select("*").eq("calendar_id", calendar.id),
+    ])
 
-    const { data: people } = await supabase
-      .from("people")
-      .select("*")
-      .eq("calendar_id", calendar.id)
-      .order("sort_order")
-
-    const { data: availability } = await supabase
-      .from("availability")
-      .select("*")
-      .eq("calendar_id", calendar.id)
-
-    // Find current user's person entry in this calendar
-    const currentPerson = people?.find((p) => p.user_id === session.user_id)
-
-    if (!currentPerson) {
-      return NextResponse.json(
-        { error: "No eres miembro de este calendario" },
-        { status: 403 }
-      )
-    }
-
-    // Enrich people with display name (alias || name)
-    const enrichedPeople = people?.map((p) => ({
-      ...p,
-      display_name: p.alias || p.name,
-    }))
+    const enrichedPeople = enrichPeople(people || [])
 
     return NextResponse.json({
       calendar,
       people: enrichedPeople,
       availability,
-      person_id: currentPerson.id,
-      my_role: currentPerson.role,
+      person_id: person.id,
+      my_role: person.role,
     })
-  } catch {
-    return NextResponse.json({ error: "Error interno" }, { status: 500 })
-  }
+  })
 }
 
 export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ slug: string }> }
 ) {
-  try {
-    const session = await getSession()
-    if (!session) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 })
-    }
-
+  return tryCatch(async () => {
+    const session = await requireSession()
     const { slug } = await params
 
-    const { data: calendar } = await supabase
-      .from("calendars")
-      .select("id, created_by")
-      .eq("slug", slug)
-      .single()
-
-    if (!calendar) {
-      return NextResponse.json({ error: "Calendario no encontrado" }, { status: 404 })
-    }
+    const { calendar } = await requireCalendarAccess(slug, session)
 
     if (calendar.created_by !== session.user_id) {
-      return NextResponse.json(
-        { error: "Solo el creador del calendario puede eliminarlo" },
-        { status: 403 }
-      )
+      throw forbidden("Solo el creador del calendario puede eliminarlo")
     }
 
-    const { error } = await supabase
-      .from("calendars")
-      .delete()
-      .eq("id", calendar.id)
+    const { error } = await supabase.from("calendars").delete().eq("id", calendar.id)
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
-
+    if (error) throw error
     return NextResponse.json({ success: true })
-  } catch (error: any) {
-    if (error.message === "No autorizado") {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 })
-    }
-    return NextResponse.json({ error: "Error interno" }, { status: 500 })
-  }
+  })
 }
 
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ slug: string }> }
 ) {
-  try {
-    const session = await getSession()
-    if (!session) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 })
-    }
-
+  return tryCatch(async () => {
+    const session = await requireSession()
     const { slug } = await params
-    const body = await request.json()
 
-    const { data: calendar } = await supabase
-      .from("calendars")
-      .select("id, created_by")
-      .eq("slug", slug)
-      .single()
-
-    if (!calendar) {
-      return NextResponse.json({ error: "Calendario no encontrado" }, { status: 404 })
-    }
+    const { calendar } = await requireCalendarAccess(slug, session)
 
     if (calendar.created_by !== session.user_id) {
-      return NextResponse.json(
-        { error: "Solo el creador puede editar el calendario" },
-        { status: 403 }
-      )
+      throw forbidden("Solo el creador puede editar el calendario")
     }
 
-    const updates: Record<string, any> = {}
-    if (body.name) updates.name = body.name.trim()
-    if (body.year) updates.year = body.year
-    if (body.months) updates.months = body.months
+    const body = await request.json()
+    const { name, year, months } = validate(updateCalendarSchema, body)
+
+    const updates: Record<string, string | number | number[]> = {}
+    if (name) updates.name = name.trim()
+    if (year) updates.year = year
+    if (months) updates.months = months
 
     if (Object.keys(updates).length === 0) {
-      return NextResponse.json(
-        { error: "Nada que actualizar" },
-        { status: 400 }
-      )
+      throw badRequest("Nada que actualizar")
     }
 
-    const { error } = await supabase
-      .from("calendars")
-      .update(updates)
-      .eq("id", calendar.id)
+    const { error } = await supabase.from("calendars").update(updates).eq("id", calendar.id)
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
-
+    if (error) throw error
     return NextResponse.json({ success: true })
-  } catch (error: any) {
-    if (error.message === "No autorizado") {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 })
-    }
-    return NextResponse.json({ error: "Error interno" }, { status: 500 })
-  }
+  })
 }

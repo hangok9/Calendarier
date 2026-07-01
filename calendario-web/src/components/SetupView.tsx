@@ -4,6 +4,12 @@ import { useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { MONTH_SHORT, CODES, CODE_SHORT, CODE_COLORS } from "@/lib/constants"
 import type { Calendar, Person, Availability } from "@/types"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { addPersonSchema } from "@/lib/schemas"
+import type { z } from "zod"
+
+type AddPersonForm = z.infer<typeof addPersonSchema>
 
 function fmtDate(iso: string): string {
   const d = new Date(iso + "T12:00:00")
@@ -28,15 +34,17 @@ export default function SetupView({
   onDataChange: () => void
 }) {
   const router = useRouter()
-  const [addUsername, setAddUsername] = useState("")
-  const [addError, setAddError] = useState("")
-  const [adding, setAdding] = useState(false)
   const [editingAlias, setEditingAlias] = useState<string | null>(null)
   const [aliasValue, setAliasValue] = useState("")
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
   const isManager = myRole === "manager"
+
+  const addPersonForm = useForm<AddPersonForm>({
+    resolver: zodResolver(addPersonSchema),
+    defaultValues: { username: "" },
+  })
 
   const myCodes = useMemo(() => {
     if (!myPersonId) return new Map<string, string[]>()
@@ -68,27 +76,22 @@ export default function SetupView({
     setClearingCode(null)
   }
 
-  async function handleAddPerson(e: React.FormEvent) {
-    e.preventDefault()
-    setAddError("")
-    setAdding(true)
+  async function handleAddPerson(data: AddPersonForm) {
     try {
       const res = await fetch(`/api/calendars/${calendar.slug}/people`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: addUsername }),
+        body: JSON.stringify({ username: data.username }),
       })
-      const data = await res.json()
+      const response = await res.json()
       if (!res.ok) {
-        setAddError(data.error || "Error al anadir persona")
+        addPersonForm.setError("root", { message: response.error || "Error al anadir persona" })
         return
       }
-      setAddUsername("")
+      addPersonForm.reset()
       onDataChange()
     } catch {
-      setAddError("Error de conexion")
-    } finally {
-      setAdding(false)
+      addPersonForm.setError("root", { message: "Error de conexion" })
     }
   }
 
@@ -201,19 +204,29 @@ export default function SetupView({
 
           {/* Add person (manager only) */}
           {isManager && (
-            <form onSubmit={handleAddPerson} style={{ marginTop: "1.5rem", paddingTop: "1.5rem", borderTop: "1px solid var(--border)", display: "flex", gap: "0.5rem", alignItems: "flex-end" }}>
+            <form onSubmit={addPersonForm.handleSubmit(handleAddPerson)} style={{ marginTop: "1.5rem", paddingTop: "1.5rem", borderTop: "1px solid var(--border)", display: "flex", gap: "0.5rem", alignItems: "flex-end" }} noValidate>
               <div style={{ flex: 1 }}>
-                <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.25rem" }}>
+                <label htmlFor="add-person-username" style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.25rem" }}>
                   Anadir persona por username
                 </label>
-                <input className="input-field" type="text" placeholder="Ej: juan" value={addUsername} onChange={(e) => setAddUsername(e.target.value.toLowerCase())} required style={{ padding: "0.5rem 0.75rem", fontSize: "0.875rem", width: "100%" }} />
+                <input id="add-person-username" className="input-field" type="text" placeholder="Ej: juan"
+                  aria-invalid={addPersonForm.formState.errors.username ? "true" : "false"}
+                  style={{ padding: "0.5rem 0.75rem", fontSize: "0.875rem", width: "100%" }}
+                  {...addPersonForm.register("username", {
+                    onChange: (e) => { e.target.value = e.target.value.toLowerCase() },
+                  })} />
+                {addPersonForm.formState.errors.username && (
+                  <p role="alert" style={{ fontSize: "0.75rem", color: "var(--red)", marginTop: "0.25rem" }}>
+                    {addPersonForm.formState.errors.username.message}
+                  </p>
+                )}
               </div>
-              <button type="submit" disabled={adding} className="btn btn-primary" style={{ padding: "0.5rem 1rem", fontSize: "0.875rem", cursor: "pointer", whiteSpace: "nowrap" }}>
-                {adding ? "..." : "Anadir"}
+              <button type="submit" disabled={addPersonForm.formState.isSubmitting} className="btn btn-primary" style={{ padding: "0.5rem 1rem", fontSize: "0.875rem", cursor: "pointer", whiteSpace: "nowrap" }}>
+                {addPersonForm.formState.isSubmitting ? "..." : "Anadir"}
               </button>
+              {addPersonForm.formState.errors.root && <p role="alert" style={{ fontSize: "0.75rem", color: "var(--red)", marginTop: "0.5rem" }}>{addPersonForm.formState.errors.root.message}</p>}
             </form>
           )}
-          {addError && <p style={{ fontSize: "0.75rem", color: "var(--red)", marginTop: "0.5rem" }}>{addError}</p>}
 
           {/* Leave or Delete calendar */}
           <div style={{ marginTop: "1.5rem", paddingTop: "1.5rem", borderTop: "1px solid var(--border)", display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>

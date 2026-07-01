@@ -1,7 +1,13 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { createPlanSchema } from "@/lib/schemas"
+import type { z } from "zod"
 import type { Calendar, GroupPlan } from "@/types"
+
+type CreatePlanForm = z.infer<typeof createPlanSchema>
 
 export default function PlanesView({
   calendar,
@@ -13,10 +19,10 @@ export default function PlanesView({
   const [plans, setPlans] = useState<GroupPlan[]>([])
   const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
-  const [title, setTitle] = useState("")
-  const [description, setDescription] = useState("")
-  const [startDate, setStartDate] = useState("")
-  const [endDate, setEndDate] = useState("")
+  const planForm = useForm<CreatePlanForm>({
+    resolver: zodResolver(createPlanSchema),
+    defaultValues: { title: "", description: "", startDate: "", endDate: "" },
+  })
 
   async function loadPlans() {
     setLoading(true)
@@ -35,19 +41,20 @@ export default function PlanesView({
     loadPlans()
   }, [calendar.slug])
 
-  async function handleCreate(e: React.FormEvent) {
-    e.preventDefault()
+  async function handleCreate(data: CreatePlanForm) {
     const res = await fetch(`/api/calendars/${calendar.slug}/plans`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, description, start_date: startDate, end_date: endDate }),
+      body: JSON.stringify({
+        title: data.title,
+        description: data.description || null,
+        start_date: data.startDate,
+        end_date: data.endDate,
+      }),
     })
     if (res.ok) {
       setShowCreate(false)
-      setTitle("")
-      setDescription("")
-      setStartDate("")
-      setEndDate("")
+      planForm.reset()
       loadPlans()
     }
   }
@@ -118,36 +125,37 @@ export default function PlanesView({
             Crear nuevo plan
           </h3>
           <form
-            onSubmit={handleCreate}
+            onSubmit={planForm.handleSubmit(handleCreate)}
             style={{ display: "flex", flexDirection: "column", gap: "1rem" }}
+            noValidate
           >
             <input
+              id="plan-title"
               className="input-field"
               placeholder="Titulo del plan"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              required
+              aria-invalid={planForm.formState.errors.title ? "true" : "false"}
+              {...planForm.register("title")}
             />
             <input
+              id="plan-desc"
               className="input-field"
               placeholder="Descripcion (opcional)"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              {...planForm.register("description")}
             />
             <div style={{ display: "flex", gap: "0.75rem" }}>
               <input
+                id="plan-start"
                 className="input-field"
                 type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                required
+                aria-invalid={planForm.formState.errors.startDate ? "true" : "false"}
+                {...planForm.register("startDate")}
               />
               <input
+                id="plan-end"
                 className="input-field"
                 type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                required
+                aria-invalid={planForm.formState.errors.endDate ? "true" : "false"}
+                {...planForm.register("endDate")}
               />
             </div>
             <div style={{ display: "flex", gap: "0.75rem" }}>

@@ -1,33 +1,42 @@
 "use client"
 
 import { useState } from "react"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { forgotPasswordSchema } from "@/lib/schemas"
+import type { z } from "zod"
+
+type ForgotForm = z.infer<typeof forgotPasswordSchema>
 
 export default function ForgotPasswordPage() {
-  const [email, setEmail] = useState("")
-  const [loading, setLoading] = useState(false)
   const [sent, setSent] = useState(false)
-  const [error, setError] = useState("")
+  const [serverError, setServerError] = useState("")
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setError("")
-    setLoading(true)
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<ForgotForm>({
+    resolver: zodResolver(forgotPasswordSchema),
+    defaultValues: { email: "" },
+  })
+
+  async function onSubmit(data: ForgotForm) {
+    setServerError("")
     try {
       const res = await fetch("/api/auth/forgot-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify(data),
       })
-      const data = await res.json()
+      const response = await res.json()
       if (!res.ok) {
-        setError(data.error || "Error")
+        setServerError(response.error || "Error")
         return
       }
       setSent(true)
     } catch {
-      setError("Error de conexion")
-    } finally {
-      setLoading(false)
+      setServerError("Error de conexion")
     }
   }
 
@@ -51,7 +60,7 @@ export default function ForgotPasswordPage() {
           {sent ? (
             <div style={{ textAlign: "center" }}>
               <div style={{ marginBottom: "1rem" }}>
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <rect x="2" y="4" width="20" height="16" rx="2" />
                   <path d="M22 4L12 13L2 4" />
                 </svg>
@@ -64,24 +73,30 @@ export default function ForgotPasswordPage() {
               </a>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+            <form onSubmit={handleSubmit(onSubmit)} style={{ display: "flex", flexDirection: "column", gap: "1rem" }} noValidate>
               <div>
-                <label style={{ display: "block", fontSize: "0.8125rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.375rem" }}>
+                <label htmlFor="forgot-email" style={{ display: "block", fontSize: "0.8125rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.375rem" }}>
                   Email
                 </label>
-                <input className="input-field" type="email" placeholder="tu@email.com" value={email}
-                  onChange={(e) => setEmail(e.target.value)} required />
+                <input id="forgot-email" className="input-field" type="email" placeholder="tu@email.com"
+                  aria-invalid={errors.email ? "true" : "false"}
+                  {...register("email")} />
+                {errors.email && (
+                  <p role="alert" style={{ fontSize: "0.75rem", color: "var(--red)", marginTop: "0.25rem" }}>
+                    {errors.email.message}
+                  </p>
+                )}
               </div>
 
-              {error && (
-                <div style={{ padding: "0.75rem", borderRadius: "var(--radius)", background: "var(--red-soft)", color: "var(--red)", fontSize: "0.8125rem", textAlign: "center" }}>
-                  {error}
+              {serverError && (
+                <div role="alert" style={{ padding: "0.75rem", borderRadius: "var(--radius)", background: "var(--red-soft)", color: "var(--red)", fontSize: "0.8125rem", textAlign: "center" }}>
+                  {serverError}
                 </div>
               )}
 
-              <button type="submit" className="btn btn-primary" disabled={loading}
-                style={{ width: "100%", padding: "0.875rem", fontSize: "1rem", opacity: loading ? 0.6 : 1 }}>
-                {loading ? "Enviando..." : "Enviar enlace"}
+              <button type="submit" className="btn btn-primary" disabled={isSubmitting}
+                style={{ width: "100%", padding: "0.875rem", fontSize: "1rem", opacity: isSubmitting ? 0.6 : 1 }}>
+                {isSubmitting ? "Enviando..." : "Enviar enlace"}
               </button>
 
               <div style={{ textAlign: "center", marginTop: "0.5rem", fontSize: "0.8125rem" }}>

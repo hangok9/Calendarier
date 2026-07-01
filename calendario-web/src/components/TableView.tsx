@@ -2,17 +2,14 @@
 
 import { useMemo } from "react"
 import { MONTH_NAMES, CODES, CODE_COLORS } from "@/lib/constants"
+import { useAvailMap, getCode } from "@/hooks/useAvailMap"
 import type { Calendar, Person, Availability } from "@/types"
-
-function getAvailCode(personId: string, dateStr: string, availability: Availability[]): string | null {
-  return availability.find((a) => a.person_id === personId && a.date === dateStr)?.code ?? null
-}
 
 export default function TableView({
   calendar,
   people,
   availability,
-  session,
+  session: _session,
   onAvailabilityChange,
 }: {
   calendar: Calendar
@@ -21,6 +18,8 @@ export default function TableView({
   session: any
   onAvailabilityChange: (a: Availability[]) => void
 }) {
+  const availMap = useAvailMap(availability)
+
   const rows = useMemo(() => {
     const result: { date: Date; dateStr: string; month: number; dayName: string; dayNum: number }[] = []
     for (const m of calendar.months) {
@@ -48,15 +47,26 @@ export default function TableView({
     const currentIndex = codes.indexOf(currentCode || "")
     const nextCode = codes[(currentIndex + 1) % codes.length]
 
+    // Optimistic update
+    const optimisticEntry: Availability = {
+      id: `opt-${personId}-${dateStr}`,
+      calendar_id: calendar.id,
+      person_id: personId,
+      date: dateStr,
+      code: nextCode || null,
+      updated_at: new Date().toISOString(),
+    }
+    const idx = availability.findIndex((a) => a.person_id === personId && a.date === dateStr)
+    const updated = idx >= 0
+      ? [...availability.slice(0, idx), optimisticEntry, ...availability.slice(idx + 1)]
+      : [...availability, optimisticEntry]
+    onAvailabilityChange(updated)
+
     await fetch(`/api/calendars/${calendar.slug}/availability`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ person_id: personId, date: dateStr, code: nextCode || null }),
     })
-
-    const r = await fetch(`/api/calendars/${calendar.slug}`)
-    const data = await r.json()
-    if (data.availability) onAvailabilityChange(data.availability)
   }
 
   let lastMonth = 0
@@ -87,7 +97,7 @@ export default function TableView({
                 lastMonth = row.month
 
                 const freeCount = people.filter(
-                  (p) => !getAvailCode(p.id, row.dateStr, availability)
+                  (p) => !getCode(availMap, p.id, row.dateStr)
                 ).length
 
                 return (
@@ -107,14 +117,23 @@ export default function TableView({
                         {row.dayName}
                       </td>
                       {personList.map((person) => {
-                        const code = getAvailCode(person.id, row.dateStr, availability)
+                        const code = getCode(availMap, person.id, row.dateStr)
                         const isFree = !code
                         const displayName = person.display_name || person.name
                         return (
                           <td
                             key={person.id}
                             onClick={() => handleCellClick(person.id, row.date, code)}
+                            role="button"
+                            tabIndex={0}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault()
+                                handleCellClick(person.id, row.date, code)
+                              }
+                            }}
                             style={{ cursor: "pointer", textAlign: "center", padding: "0.25rem", minHeight: "44px", verticalAlign: "middle" }}
+                            aria-label={`${displayName} ${row.dateStr}${code ? ` - ${code}` : " - Libre"}`}
                           >
                             {isFree ? (
                               <span

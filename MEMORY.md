@@ -1,0 +1,4 @@
+- [Back‑end Error Analysis](./.claude/projects/-home-pepe-Escritorio-Calenadarier/memory/backend-error-analysis.md) — Detailed enumeration of possible error conditions in Calenadarier backend API routes (validation, auth, authorization, DB, unexpected) with HTTP status codes, causes and mitigation
+- [Backend Math Explanation](./.claude/projects/-home-pepe-Escritorio-Calenadarier/memory/backend-math-explanation.md) — Explanation of date handling and availability logic in the backend
+- [Monetization Gap Analysis](./.claude/projects/-home-pepe-Escritorio-Calenadarier/memory/monetizacion-gap-analysis.md) — Analysis of missing features for freemium/SaaS tiers
+- [Relational Algebra Analysis](./.claude/projects/-home-pepe-Escritorio-Calenadarier/memory/relational-algebra-analysis.md) — Extensive analysis of relational algebra concepts and operations

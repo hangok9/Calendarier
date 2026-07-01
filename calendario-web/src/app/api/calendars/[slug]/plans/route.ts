@@ -1,39 +1,18 @@
 import { NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
-import { getSession } from "@/lib/auth"
-
+import { requireSession } from "@/lib/auth"
+import { tryCatch } from "@/lib/errors"
+import { validate, createPlanSchema } from "@/lib/validate"
+import { requireCalendarAccess } from "@/services/calendar.service"
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ slug: string }> }
 ) {
-  try {
-    const session = await getSession()
-    if (!session) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 })
-    }
-
+  return tryCatch(async () => {
+    const session = await requireSession()
     const { slug } = await params
 
-    const { data: calendar } = await supabase
-      .from("calendars")
-      .select("id")
-      .eq("slug", slug)
-      .single()
-
-    if (!calendar) {
-      return NextResponse.json({ error: "Calendario no encontrado" }, { status: 404 })
-    }
-
-    const { data: person } = await supabase
-      .from("people")
-      .select("id")
-      .eq("calendar_id", calendar.id)
-      .eq("user_id", session.user_id)
-      .maybeSingle()
-
-    if (!person) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 403 })
-    }
+    const { calendar } = await requireCalendarAccess(slug, session)
 
     const { data: plans, error } = await supabase
       .from("group_plans")
@@ -45,69 +24,40 @@ export async function GET(
       .eq("calendar_id", calendar.id)
       .order("start_date", { ascending: false })
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) throw error
+
+    type PlanRow = {
+      id: string; calendar_id: string; title: string; description: string | null
+      start_date: string; end_date: string; created_by: string; created_at: string
+      creator: { name: string }[]
+      responses: { id: string; plan_id: string; person_id: string; response: string; created_at: string; person: { name: string }[] }[] | null
     }
 
-    const formatted = plans.map((plan: any) => ({
+    const formatted = (plans as unknown as PlanRow[]).map((plan) => ({
       ...plan,
-      creator_name: plan.creator?.name,
-      responses: plan.responses?.map((r: any) => ({
+      creator_name: plan.creator?.[0]?.name,
+      responses: plan.responses?.map((r) => ({
         ...r,
-        person_name: r.person?.name,
+        person_name: r.person?.[0]?.name,
       })),
     }))
 
     return NextResponse.json(formatted)
-  } catch (error: any) {
-    if (error.message === "No autorizado") {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 })
-    }
-    return NextResponse.json({ error: "Error interno" }, { status: 500 })
-  }
+  })
 }
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ slug: string }> }
 ) {
-  try {
-    const session = await getSession()
-    if (!session) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 })
-    }
-
+  return tryCatch(async () => {
+    const session = await requireSession()
     const { slug } = await params
 
-    const { data: calendar } = await supabase
-      .from("calendars")
-      .select("id")
-      .eq("slug", slug)
-      .single()
+    const { calendar, person } = await requireCalendarAccess(slug, session)
 
-    if (!calendar) {
-      return NextResponse.json({ error: "Calendario no encontrado" }, { status: 404 })
-    }
-
-    const { data: person } = await supabase
-      .from("people")
-      .select("id")
-      .eq("calendar_id", calendar.id)
-      .eq("user_id", session.user_id)
-      .maybeSingle()
-
-    if (!person) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 403 })
-    }
-
-    const { title, description, start_date, end_date } = await request.json()
-
-    if (!title || !start_date || !end_date) {
-      return NextResponse.json(
-        { error: "title, start_date y end_date son requeridos" },
-        { status: 400 }
-      )
-    }
+    const body = await request.json()
+    const { title, description, start_date, end_date } = validate(createPlanSchema, body)
 
     const { data, error } = await supabase
       .from("group_plans")
@@ -122,15 +72,7 @@ export async function POST(
       .select()
       .single()
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
-
+    if (error) throw error
     return NextResponse.json({ success: true, plan: data })
-  } catch (error: any) {
-    if (error.message === "No autorizado") {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 })
-    }
-    return NextResponse.json({ error: "Error interno" }, { status: 500 })
-  }
+  })
 }

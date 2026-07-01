@@ -17,7 +17,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           rel="stylesheet"
         />
       </head>
-      <body className="antialiased">{children}</body>
+      <body className="antialiased">
+        <a href="#main-content" className="skip-link" style={{ position: "absolute", left: "-9999px", top: 0, zIndex: 999, padding: "0.75rem 1.5rem", background: "var(--accent)", color: "#fff", fontWeight: 600, fontSize: "0.875rem", textDecoration: "none" }}>
+          Saltar al contenido principal
+        </a>
+        {children}
+      </body>
     </html>
   )
 }

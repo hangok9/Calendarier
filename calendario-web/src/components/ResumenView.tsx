@@ -2,11 +2,8 @@
 
 import { useMemo } from "react"
 import { MONTH_NAMES, CODES, CODE_COLORS, CODE_SHORT } from "@/lib/constants"
+import { useAvailMap, getCode } from "@/hooks/useAvailMap"
 import type { Calendar, Person, Availability } from "@/types"
-
-function getAvailCode(personId: string, dateStr: string, availability: Availability[]): string | null {
-  return availability.find((a) => a.person_id === personId && a.date === dateStr)?.code ?? null
-}
 
 const COVERAGE_CODES = ["TM", "TT", "TN"]
 const OTHER_CODES = CODES.filter((c) => !COVERAGE_CODES.includes(c))
@@ -22,10 +19,11 @@ export default function ResumenView({
   availability: Availability[]
   totalDays: number
 }) {
+  const availMap = useAvailMap(availability)
+
   const stats = useMemo(() => {
     const n = people.length
     let allFree = 0
-    let allFn = 0
 
     const personStats: { id: string; name: string; free: number; codes: Record<string, number> }[] = people.map((p) => ({
       id: p.id,
@@ -48,7 +46,7 @@ export default function ResumenView({
         COVERAGE_CODES.forEach((c) => (coverage[c] = 0))
 
         for (const person of people) {
-          const code = getAvailCode(person.id, dateStr, availability)
+          const code = getCode(availMap, person.id, dateStr)
           const pStats = personStats.find((ps) => ps.id === person.id)
           if (!code) {
             libre++
@@ -78,8 +76,8 @@ export default function ResumenView({
 
     const avgAvailability = dayRows.reduce((sum, r) => sum + r.libre / n, 0) / (dayRows.length || 1)
 
-    return { allFree, allFn, avgAvailability, personStats, dayRows }
-  }, [calendar, people, availability])
+    return { allFree, avgAvailability, personStats, dayRows }
+  }, [calendar, people, availMap])
 
   const monthRange = calendar.months.map((m) => MONTH_NAMES[m]).join(" - ")
 

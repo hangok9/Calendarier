@@ -8,6 +8,7 @@ import CalendarView from "@/components/CalendarView"
 import ResumenView from "@/components/ResumenView"
 import PlanesView from "@/components/PlanesView"
 import EventosView from "@/components/EventosView"
+import { SkeletonPage } from "@/components/Skeleton"
 import type { Calendar, Person, Availability } from "@/types"
 
 type ViewType = "setup" | "calendario" | "resumen" | "planes" | "eventos"
@@ -27,24 +28,22 @@ export default function CalendarPage() {
   const [loading, setLoading] = useState(true)
 
   const loadData = useCallback(() => {
-    fetch("/api/auth/me")
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.error) {
+    Promise.all([
+      fetch("/api/auth/me").then((r) => r.json()),
+      fetch(`/api/calendars/${slug}`).then((r) => r.json()),
+    ])
+      .then(([authData, calData]) => {
+        if (authData.error || calData?.error) {
           router.push(`/`)
           return
         }
-        setSession(data.session)
-        return fetch(`/api/calendars/${slug}`)
-      })
-      .then((r) => r?.json())
-      .then((data) => {
-        if (data?.calendar) {
-          setCalendar(data.calendar)
-          setPeople(data.people || [])
-          setAvailability(data.availability || [])
-          setPersonId(data.person_id || null)
-          setMyRole(data.my_role || "member")
+        setSession(authData.session)
+        if (calData?.calendar) {
+          setCalendar(calData.calendar)
+          setPeople(calData.people || [])
+          setAvailability(calData.availability || [])
+          setPersonId(calData.person_id || null)
+          setMyRole(calData.my_role || "member")
         }
       })
       .catch(() => router.push(`/`))
@@ -59,13 +58,7 @@ export default function CalendarPage() {
   }, [router])
 
   if (loading) {
-    return (
-      <main style={{ maxWidth: "80rem", margin: "0 auto", padding: "6rem 1.5rem 2rem" }}>
-        <div style={{ textAlign: "center", padding: "4rem", color: "var(--text-muted)" }}>
-          Cargando...
-        </div>
-      </main>
-    )
+    return <SkeletonPage />
   }
 
   if (!session || !calendar) return null
@@ -91,7 +84,7 @@ export default function CalendarPage() {
         onLogout={handleLogout}
       />
 
-      <main style={{ maxWidth: "80rem", margin: "0 auto", padding: "5rem 1.5rem 2rem", position: "relative", zIndex: 1 }}>
+      <main id="main-content" style={{ maxWidth: "80rem", margin: "0 auto", padding: "5rem 1.5rem 2rem", position: "relative", zIndex: 1 }}>
         <div className={`view ${currentView === "setup" ? "active" : ""}`}>
           <SetupView
             calendar={calendar}

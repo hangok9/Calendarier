@@ -32,7 +32,7 @@
   --purple: #a855f7;
   --purple-soft: #faf5ff;
   --amber: #f59e0b;
-  --amber-soft: #fffbe b;
+  --amber-soft: #fffbeb;
   --teal: #14b8a6;
   --teal-soft: #f0fdfa;
   --gray: #6b7280;
@@ -800,4 +800,20 @@ body {
   height: 1px;
   background: linear-gradient(90deg, transparent, var(--border), transparent);
   margin: 2rem 0;
+}
+
+.skip-link:focus {
+  left: 0.5rem !important;
+  top: 0.5rem !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

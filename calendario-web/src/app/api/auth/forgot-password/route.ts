@@ -1,19 +1,13 @@
 import { NextResponse } from "next/server"
-import { SignJWT } from "jose"
 import { supabase } from "@/lib/supabase"
+import { createResetToken } from "@/lib/auth"
+import { tryCatch } from "@/lib/errors"
+import { validate, forgotPasswordSchema } from "@/lib/validate"
 import { sendPasswordResetEmail } from "@/lib/email"
 
-const resetSecret = new TextEncoder().encode(
-  process.env.JWT_SECRET || "calendarier-jwt-secret-change-in-production-2026"
-)
-
 export async function POST(request: Request) {
-  try {
-    const { email } = await request.json()
-
-    if (!email) {
-      return NextResponse.json({ error: "Email requerido" }, { status: 400 })
-    }
+  return tryCatch(async () => {
+    const { email } = validate(forgotPasswordSchema, await request.json())
 
     const { data: user } = await supabase
       .from("users")
@@ -21,7 +15,6 @@ export async function POST(request: Request) {
       .eq("email", email)
       .maybeSingle()
 
-    // Don't reveal whether the email exists or not
     if (!user) {
       return NextResponse.json({
         success: true,
@@ -29,23 +22,15 @@ export async function POST(request: Request) {
       })
     }
 
-    const token = await new SignJWT({ user_id: user.id, purpose: "reset" })
-      .setProtectedHeader({ alg: "HS256" })
-      .setIssuedAt()
-      .setExpirationTime("1h")
-      .sign(resetSecret)
+    const token = await createResetToken(user.id)
 
-    try {
-      await sendPasswordResetEmail(email, token)
-    } catch (e) {
+    sendPasswordResetEmail(email, token).catch((e) =>
       console.error("Reset email error:", e)
-    }
+    )
 
     return NextResponse.json({
       success: true,
       message: "Si el email existe, recibiras un enlace para restablecer tu contrasena",
     })
-  } catch {
-    return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 })
-  }
+  })
 }

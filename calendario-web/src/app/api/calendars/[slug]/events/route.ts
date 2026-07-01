@@ -1,41 +1,21 @@
 import { NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
-import { getSession } from "@/lib/auth"
+import { requireSession } from "@/lib/auth"
+import { tryCatch } from "@/lib/errors"
+import { validate, createEventSchema } from "@/lib/validate"
+import { requireCalendarAccess } from "@/services/calendar.service"
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ slug: string }> }
 ) {
-  try {
-    const session = await getSession()
-    if (!session) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 })
-    }
-
+  return tryCatch(async () => {
+    const session = await requireSession()
     const { slug } = await params
     const { searchParams } = new URL(request.url)
     const date = searchParams.get("date")
 
-    const { data: calendar } = await supabase
-      .from("calendars")
-      .select("id")
-      .eq("slug", slug)
-      .single()
-
-    if (!calendar) {
-      return NextResponse.json({ error: "Calendario no encontrado" }, { status: 404 })
-    }
-
-    const { data: person } = await supabase
-      .from("people")
-      .select("id")
-      .eq("calendar_id", calendar.id)
-      .eq("user_id", session.user_id)
-      .maybeSingle()
-
-    if (!person) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 403 })
-    }
+    const { calendar } = await requireCalendarAccess(slug, session)
 
     let query = supabase
       .from("custom_events")
@@ -48,61 +28,23 @@ export async function GET(
 
     const { data, error } = await query.order("date").order("start_time")
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
-
+    if (error) throw error
     return NextResponse.json(data)
-  } catch (error: any) {
-    if (error.message === "No autorizado") {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 })
-    }
-    return NextResponse.json({ error: "Error interno" }, { status: 500 })
-  }
+  })
 }
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ slug: string }> }
 ) {
-  try {
-    const session = await getSession()
-    if (!session) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 })
-    }
-
+  return tryCatch(async () => {
+    const session = await requireSession()
     const { slug } = await params
 
-    const { data: calendar } = await supabase
-      .from("calendars")
-      .select("id")
-      .eq("slug", slug)
-      .single()
+    const { calendar } = await requireCalendarAccess(slug, session)
 
-    if (!calendar) {
-      return NextResponse.json({ error: "Calendario no encontrado" }, { status: 404 })
-    }
-
-    const { data: person } = await supabase
-      .from("people")
-      .select("id")
-      .eq("calendar_id", calendar.id)
-      .eq("user_id", session.user_id)
-      .maybeSingle()
-
-    if (!person) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 403 })
-    }
-
-    const { person_id, date, start_time, end_time, label, code } =
-      await request.json()
-
-    if (!person_id || !date) {
-      return NextResponse.json(
-        { error: "person_id y date son requeridos" },
-        { status: 400 }
-      )
-    }
+    const body = await request.json()
+    const { person_id, date, start_time, end_time, label, code } = validate(createEventSchema, body)
 
     const { data, error } = await supabase
       .from("custom_events")
@@ -118,15 +60,7 @@ export async function POST(
       .select()
       .single()
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
-
+    if (error) throw error
     return NextResponse.json({ success: true, event: data })
-  } catch (error: any) {
-    if (error.message === "No autorizado") {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 })
-    }
-    return NextResponse.json({ error: "Error interno" }, { status: 500 })
-  }
+  })
 }

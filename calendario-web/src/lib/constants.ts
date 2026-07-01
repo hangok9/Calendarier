@@ -29,15 +29,15 @@ export const CODE_COLORS: Record<
   string,
   { bg: string; text: string; chipBg: string; chipText: string }
 > = {
-  TM: { bg: "#22C55E", text: "#fff", chipBg: "var(--green-soft)", chipText: "#166534" },
-  TT: { bg: "#10B981", text: "#fff", chipBg: "var(--emerald-soft)", chipText: "#065F46" },
-  TN: { bg: "#059669", text: "#fff", chipBg: "#D1FAE5", chipText: "#064E3B" },
-  FV: { bg: "#F97316", text: "#fff", chipBg: "var(--orange-soft)", chipText: "#92400E" },
-  FN: { bg: "#EF4444", text: "#fff", chipBg: "var(--red-soft)", chipText: "#991B1B" },
-  OC: { bg: "#6B7280", text: "#fff", chipBg: "var(--gray-soft)", chipText: "#1F2937" },
-  RE: { bg: "#A855F7", text: "#fff", chipBg: "var(--purple-soft)", chipText: "#6B21A8" },
-  OT: { bg: "#14B8A6", text: "#fff", chipBg: "var(--teal-soft)", chipText: "#115E59" },
-  CL: { bg: "#F59E0B", text: "#fff", chipBg: "var(--amber-soft)", chipText: "#92400E" },
+  TM: { bg: "#16A34A", text: "#fff", chipBg: "var(--green-soft)", chipText: "#166534" },
+  TT: { bg: "#059669", text: "#fff", chipBg: "var(--emerald-soft)", chipText: "#065F46" },
+  TN: { bg: "#166534", text: "#fff", chipBg: "#D1FAE5", chipText: "#064E3B" },
+  FV: { bg: "#EA580C", text: "#fff", chipBg: "var(--orange-soft)", chipText: "#92400E" },
+  FN: { bg: "#DC2626", text: "#fff", chipBg: "var(--red-soft)", chipText: "#991B1B" },
+  OC: { bg: "#4B5563", text: "#fff", chipBg: "var(--gray-soft)", chipText: "#1F2937" },
+  RE: { bg: "#9333EA", text: "#fff", chipBg: "var(--purple-soft)", chipText: "#6B21A8" },
+  OT: { bg: "#0D9488", text: "#fff", chipBg: "var(--teal-soft)", chipText: "#115E59" },
+  CL: { bg: "#D97706", text: "#fff", chipBg: "var(--amber-soft)", chipText: "#92400E" },
 }
 
 export const HIDDEN_IN_GRID = new Set(["FN", "OC", "RE", "OT"])

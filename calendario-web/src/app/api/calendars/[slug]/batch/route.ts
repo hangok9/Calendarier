@@ -1,55 +1,34 @@
 import { NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
-import { getSession } from "@/lib/auth"
+import { requireSession } from "@/lib/auth"
+import { tryCatch, forbidden, badRequest } from "@/lib/errors"
+import { validate, batchAvailabilitySchema } from "@/lib/validate"
+import { requireCalendarAccess } from "@/services/calendar.service"
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ slug: string }> }
 ) {
-  try {
-    const session = await getSession()
-    if (!session) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 })
-    }
-
+  return tryCatch(async () => {
+    const session = await requireSession()
     const { slug } = await params
 
-    const { data: calendar } = await supabase
-      .from("calendars")
-      .select("id")
-      .eq("slug", slug)
-      .single()
+    const { calendar, person } = await requireCalendarAccess(slug, session)
 
-    if (!calendar) {
-      return NextResponse.json({ error: "Calendario no encontrado" }, { status: 404 })
-    }
+    const body = await request.json()
+    const { person_id, code, start_date, end_date } = validate(batchAvailabilitySchema, body)
 
-    const { data: person } = await supabase
-      .from("people")
-      .select("id")
-      .eq("calendar_id", calendar.id)
-      .eq("user_id", session.user_id)
-      .maybeSingle()
-
-    if (!person) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 403 })
-    }
-
-    const { person_id, code, start_date, end_date } = await request.json()
-
-    if (!person_id || !start_date || !end_date) {
-      return NextResponse.json(
-        { error: "person_id, start_date y end_date son requeridos" },
-        { status: 400 }
-      )
-    }
-
-    if (person_id !== person.id) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 403 })
-    }
+    if (person_id !== person.id) throw forbidden("No autorizado")
 
     const start = new Date(start_date)
     const end = new Date(end_date)
+    const totalDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1
+    const MAX_BATCH_DAYS = 93
+
+    if (totalDays > MAX_BATCH_DAYS) {
+      throw badRequest(`Maximo ${MAX_BATCH_DAYS} dias por operacion`)
+    }
+
     const dates: string[] = []
 
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
@@ -68,15 +47,7 @@ export async function POST(
       ignoreDuplicates: false,
     })
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
-
+    if (error) throw error
     return NextResponse.json({ success: true, updated: dates.length })
-  } catch (error: any) {
-    if (error.message === "No autorizado") {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 })
-    }
-    return NextResponse.json({ error: "Error interno" }, { status: 500 })
-  }
+  })
 }

@@ -1,13 +1,10 @@
 "use client"
 
-import { useMemo, useState, useRef, useCallback, useEffect } from "react"
+import { useMemo, useState, useRef, useEffect } from "react"
 import { DAY_NAMES, MONTH_NAMES, CODES, CODE_COLORS } from "@/lib/constants"
 import { computeInitialsMap } from "@/lib/initials"
+import { useAvailMap, getCode } from "@/hooks/useAvailMap"
 import type { Calendar, Person, Availability } from "@/types"
-
-function getAvailCode(personId: string, dateStr: string, availability: Availability[]): string | null {
-  return availability.find((a) => a.person_id === personId && a.date === dateStr)?.code ?? null
-}
 
 function nextCode(current: string | null): string | null {
   const codes = ["", ...CODES]
@@ -62,7 +59,7 @@ export default function WeekView({
   calendar,
   people,
   availability,
-  session,
+  session: _session,
   onAvailabilityChange,
 }: {
   calendar: Calendar
@@ -77,6 +74,7 @@ export default function WeekView({
   const currentMonth = calendar.months[currentMonthIndex]
   const dragRef = useRef<{ personId: string; code: string | null; cells: Set<string> } | null>(null)
   const didDrag = useRef(false)
+  const availMap = useAvailMap(availability)
 
   const weeks = useMemo(() => {
     if (!currentMonth) return []
@@ -98,21 +96,30 @@ export default function WeekView({
       ? `${fmtDate(realDays[0].date)} - ${fmtDate(realDays[realDays.length - 1].date)}`
       : ""
 
-  const updateAvailability = useCallback(async () => {
-    const r = await fetch(`/api/calendars/${calendar.slug}`)
-    const data = await r.json()
-    if (data.availability) onAvailabilityChange(data.availability)
-  }, [calendar.slug, onAvailabilityChange])
-
   async function handleCellClick(personId: string, date: Date, currentCode: string | null) {
     const dateStr = date.toISOString().split("T")[0]
     const code = nextCode(currentCode)
+
+    // Optimistic update
+    const optimisticEntry: Availability = {
+      id: `opt-${personId}-${dateStr}`,
+      calendar_id: calendar.id,
+      person_id: personId,
+      date: dateStr,
+      code,
+      updated_at: new Date().toISOString(),
+    }
+    const idx = availability.findIndex((a) => a.person_id === personId && a.date === dateStr)
+    const updated = idx >= 0
+      ? [...availability.slice(0, idx), optimisticEntry, ...availability.slice(idx + 1)]
+      : [...availability, optimisticEntry]
+    onAvailabilityChange(updated)
+
     await fetch(`/api/calendars/${calendar.slug}/availability`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ person_id: personId, date: dateStr, code }),
     })
-    await updateAvailability()
   }
 
   async function applyBatch(personId: string, code: string | null, dateStrs: string[]) {
@@ -135,7 +142,10 @@ export default function WeekView({
         }),
       })
     }
-    await updateAvailability()
+    // Full reload for batch operations
+    const r = await fetch(`/api/calendars/${calendar.slug}`)
+    const data = await r.json()
+    if (data.availability) onAvailabilityChange(data.availability)
   }
 
   function handlePointerDown(personId: string, date: Date, currentCode: string | null) {
@@ -222,6 +232,7 @@ export default function WeekView({
             minHeight: "44px",
           }}
           onClick={() => setMonthOffset((o) => Math.max(0, o - 1))}
+          aria-label="Mes anterior"
         >
           ← Mes
         </button>
@@ -243,6 +254,7 @@ export default function WeekView({
             minHeight: "44px",
           }}
           onClick={() => setMonthOffset((o) => Math.min(calendar.months.length - 1, o + 1))}
+          aria-label="Mes siguiente"
         >
           Mes →
         </button>
@@ -272,6 +284,7 @@ export default function WeekView({
             visibility: hasPrevWeek ? "visible" : "hidden",
           }}
           onClick={goPrevWeek}
+          aria-label="Semana anterior"
         >
           ← Semana
         </button>
@@ -293,6 +306,7 @@ export default function WeekView({
             visibility: hasNextWeek ? "visible" : "hidden",
           }}
           onClick={goNextWeek}
+          aria-label="Semana siguiente"
         >
           Semana →
         </button>
@@ -368,7 +382,7 @@ export default function WeekView({
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: "0.1875rem" }}>
                 {people.map((person) => {
-                  const code = getAvailCode(person.id, dateStr, availability)
+                  const code = getCode(availMap, person.id, dateStr)
                   const isFree = !code
                   const initial = initialsMap.get(person.id) || (person.display_name || person.name).charAt(0).toUpperCase()
                   const bgColor = isFree
@@ -395,6 +409,14 @@ export default function WeekView({
                         touchAction: "none",
                       }}
                       title={`${person.display_name || person.name}${code ? ` (${code})` : ""}`}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault()
+                          handleCellClick(person.id, cell.date, code)
+                        }
+                      }}
                       onPointerDown={() => handlePointerDown(person.id, cell.date, code)}
                       onPointerEnter={() => handlePointerEnter(person.id, cell.date)}
                       onClick={() => {

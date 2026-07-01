@@ -2,7 +2,14 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { createCalendarSchema } from "@/lib/schemas"
+import type { z } from "zod"
 import { MONTH_SHORT } from "@/lib/constants"
+import { SkeletonPage } from "@/components/Skeleton"
+
+type CreateCalendarForm = z.infer<typeof createCalendarSchema>
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -10,18 +17,19 @@ export default function DashboardPage() {
   const [calendars, setCalendars] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
-  const [newName, setNewName] = useState("")
-  const [newMyName, setNewMyName] = useState("")
   const [newYear, setNewYear] = useState(2026)
   const [newMonths, setNewMonths] = useState<number[]>([7, 8])
-  const [createError, setCreateError] = useState("")
-  const [creating, setCreating] = useState(false)
+
+  const createForm = useForm<CreateCalendarForm>({
+    resolver: zodResolver(createCalendarSchema),
+    defaultValues: { name: "", myName: "" },
+  })
 
   useEffect(() => {
     fetch("/api/auth/me")
       .then((r) => r.json())
       .then((data) => {
-        if (data.error) {
+        if (data.error || !data.user) {
           router.replace("/")
           return
         }
@@ -46,38 +54,31 @@ export default function DashboardPage() {
       .finally(() => setLoading(false))
   }, [user])
 
-  async function handleCreate(e: React.FormEvent) {
-    e.preventDefault()
-    setCreateError("")
-    setCreating(true)
-
+  async function handleCreate(data: CreateCalendarForm) {
     try {
       const res = await fetch("/api/calendars", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: newName,
+          name: data.name,
           year: newYear,
           months: newMonths,
-          myName: newMyName || user?.username,
+          myName: data.myName || user?.username,
         }),
       })
 
-      const data = await res.json()
+      const response = await res.json()
 
       if (!res.ok) {
-        setCreateError(data.error || "Error al crear calendario")
+        createForm.setError("root", { message: response.error || "Error al crear calendario" })
         return
       }
 
       setShowCreate(false)
-      setNewName("")
-      setNewMyName("")
-      router.push(`/calendario/${data.calendar.slug}`)
+      createForm.reset()
+      router.push(`/calendario/${response.calendar.slug}`)
     } catch {
-      setCreateError("Error de conexion")
-    } finally {
-      setCreating(false)
+      createForm.setError("root", { message: "Error de conexion" })
     }
   }
 
@@ -93,21 +94,14 @@ export default function DashboardPage() {
   }
 
   if (loading) {
-    return (
-      <>
-        <div className="bg-pattern" /><div className="bg-glow" /><div className="bg-glow-2" />
-        <main style={{ maxWidth: "48rem", margin: "0 auto", padding: "6rem 1.5rem 2rem", position: "relative", zIndex: 1 }}>
-          <div style={{ textAlign: "center", padding: "4rem", color: "var(--text-muted)" }}>Cargando...</div>
-        </main>
-      </>
-    )
+    return <SkeletonPage />
   }
 
   return (
     <>
       <div className="bg-pattern" /><div className="bg-glow" /><div className="bg-glow-2" />
 
-      <main style={{ maxWidth: "48rem", margin: "0 auto", padding: "6rem 1.5rem 2rem", position: "relative", zIndex: 1 }}>
+      <main id="main-content" style={{ maxWidth: "48rem", margin: "0 auto", padding: "6rem 1.5rem 2rem", position: "relative", zIndex: 1 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "2rem", flexWrap: "wrap", gap: "1rem" }}>
           <div>
             <div className="pill" style={{ display: "inline-flex", marginBottom: "0.75rem" }}>Panel de control</div>
@@ -124,14 +118,30 @@ export default function DashboardPage() {
           <div style={{ position: "fixed", inset: 0, zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.4)", padding: "1rem" }} onClick={() => setShowCreate(false)}>
             <div className="surface-elevated" style={{ width: "100%", maxWidth: "28rem", padding: "2rem", maxHeight: "90vh", overflow: "auto" }} onClick={(e) => e.stopPropagation()}>
               <h2 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "1.5rem" }}>Crear calendario</h2>
-              <form onSubmit={handleCreate} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+              <form onSubmit={createForm.handleSubmit(handleCreate)} style={{ display: "flex", flexDirection: "column", gap: "1rem" }} noValidate>
                 <div>
-                  <label style={{ display: "block", fontSize: "0.8125rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.375rem" }}>Nombre del grupo</label>
-                  <input className="input-field" type="text" placeholder="Ej: Viaje 2026" value={newName} onChange={(e) => setNewName(e.target.value)} required autoFocus />
+                  <label htmlFor="cal-name" style={{ display: "block", fontSize: "0.8125rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.375rem" }}>Nombre del grupo</label>
+                  <input id="cal-name" className="input-field" type="text" placeholder="Ej: Viaje 2026" autoFocus
+                    aria-invalid={createForm.formState.errors.name ? "true" : "false"}
+                    {...createForm.register("name")} />
+                  {createForm.formState.errors.name && (
+                    <p role="alert" style={{ fontSize: "0.75rem", color: "var(--red)", marginTop: "0.25rem" }}>
+                      {createForm.formState.errors.name.message}
+                    </p>
+                  )}
                 </div>
                 <div>
-                  <label style={{ display: "block", fontSize: "0.8125rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.375rem" }}>Tu nombre en este grupo</label>
-                  <input className="input-field" type="text" placeholder={user?.username?.toUpperCase() || ""} value={newMyName} onChange={(e) => setNewMyName(e.target.value.toUpperCase())} />
+                  <label htmlFor="cal-myname" style={{ display: "block", fontSize: "0.8125rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.375rem" }}>Tu nombre en este grupo</label>
+                  <input id="cal-myname" className="input-field" type="text" placeholder={user?.username?.toUpperCase() || ""}
+                    aria-invalid={createForm.formState.errors.myName ? "true" : "false"}
+                    {...createForm.register("myName", {
+                      onChange: (e) => { e.target.value = e.target.value.toUpperCase() },
+                    })} />
+                  {createForm.formState.errors.myName && (
+                    <p role="alert" style={{ fontSize: "0.75rem", color: "var(--red)", marginTop: "0.25rem" }}>
+                      {createForm.formState.errors.myName.message}
+                    </p>
+                  )}
                   <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "0.25rem", display: "block" }}>Obligatorio. Tus amigos te conocen asi.</span>
                 </div>
                 <div style={{ display: "flex", gap: "0.75rem" }}>
@@ -151,11 +161,11 @@ export default function DashboardPage() {
                     </div>
                   </div>
                 </div>
-                {createError && <div style={{ padding: "0.75rem", borderRadius: "var(--radius)", background: "var(--red-soft)", color: "var(--red)", fontSize: "0.8125rem", textAlign: "center" }}>{createError}</div>}
+                {createForm.formState.errors.root && <div role="alert" style={{ padding: "0.75rem", borderRadius: "var(--radius)", background: "var(--red-soft)", color: "var(--red)", fontSize: "0.8125rem", textAlign: "center" }}>{createForm.formState.errors.root.message}</div>}
                 <div style={{ display: "flex", gap: "0.75rem", marginTop: "0.5rem" }}>
                   <button type="button" className="btn btn-secondary" onClick={() => setShowCreate(false)} style={{ flex: 1, padding: "0.75rem", cursor: "pointer" }}>Cancelar</button>
-                  <button type="submit" className="btn btn-primary" disabled={creating} style={{ flex: 1, padding: "0.75rem", opacity: creating ? 0.6 : 1, cursor: "pointer" }}>
-                    {creating ? "Creando..." : "Crear"}
+                  <button type="submit" className="btn btn-primary" disabled={createForm.formState.isSubmitting} style={{ flex: 1, padding: "0.75rem", opacity: createForm.formState.isSubmitting ? 0.6 : 1, cursor: "pointer" }}>
+                    {createForm.formState.isSubmitting ? "Creando..." : "Crear"}
                   </button>
                 </div>
               </form>

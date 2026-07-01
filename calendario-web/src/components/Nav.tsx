@@ -1,6 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
+import ThemeToggle from "./ThemeToggle"
 import type { ViewType } from "@/types"
 
 const navItems: { id: ViewType; label: string }[] = [
@@ -80,6 +81,7 @@ export default function Nav({
                 {item.label}
               </button>
             ))}
+            <ThemeToggle />
             <div
               style={{
                 width: "1px",
@@ -167,6 +169,9 @@ export default function Nav({
           >
             <span>Salir</span>
           </a>
+        </div>
+        <div style={{ position: "fixed", top: "0.375rem", right: "0.75rem", zIndex: 60 }}>
+          <ThemeToggle />
         </div>
       </nav>
     </>

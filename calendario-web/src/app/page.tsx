@@ -2,14 +2,28 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { loginSchema } from "@/lib/schemas"
+import type { z } from "zod"
+
+type LoginForm = z.infer<typeof loginSchema>
 
 export default function LoginPage() {
   const router = useRouter()
-  const [username, setUsername] = useState("")
-  const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
-  const [error, setError] = useState("")
-  const [loading, setLoading] = useState(true)
+  const [serverError, setServerError] = useState("")
+  const [checkingSession, setCheckingSession] = useState(true)
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    setError: _setError,
+  } = useForm<LoginForm>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { username: "", password: "" },
+  })
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -20,37 +34,33 @@ export default function LoginPage() {
         }
       })
       .catch(() => {})
-      .finally(() => setLoading(false))
+      .finally(() => setCheckingSession(false))
   }, [router])
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setError("")
-    setLoading(true)
+  async function onSubmit(data: LoginForm) {
+    setServerError("")
 
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify(data),
       })
 
-      const data = await res.json()
+      const response = await res.json()
 
       if (!res.ok) {
-        setError(data.error || "Error al iniciar sesion")
+        setServerError(response.error || "Error al iniciar sesion")
         return
       }
 
       router.push("/dashboard")
     } catch {
-      setError("Error de conexion")
-    } finally {
-      setLoading(false)
+      setServerError("Error de conexion")
     }
   }
 
-  if (loading) {
+  if (checkingSession) {
     return (
       <>
         <div className="bg-pattern" />
@@ -97,37 +107,45 @@ export default function LoginPage() {
           </div>
 
           <form
-            onSubmit={handleSubmit}
+            onSubmit={handleSubmit(onSubmit)}
             style={{ display: "flex", flexDirection: "column", gap: "1rem" }}
+            noValidate
           >
             <div>
-              <label style={{ display: "block", fontSize: "0.8125rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.375rem" }}>
+              <label htmlFor="username" style={{ display: "block", fontSize: "0.8125rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.375rem" }}>
                 Usuario
               </label>
               <input
+                id="username"
                 className="input-field"
                 type="text"
                 placeholder="Tu nombre de usuario"
-                value={username}
-                onChange={(e) => setUsername(e.target.value.toLowerCase())}
-                required
                 autoFocus
+                aria-invalid={errors.username ? "true" : "false"}
+                {...register("username", {
+                  onChange: (e) => { e.target.value = e.target.value.toLowerCase() },
+                })}
               />
+              {errors.username && (
+                <p role="alert" style={{ fontSize: "0.75rem", color: "var(--red)", marginTop: "0.25rem" }}>
+                  {errors.username.message}
+                </p>
+              )}
             </div>
 
             <div>
-              <label style={{ display: "block", fontSize: "0.8125rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.375rem" }}>
+              <label htmlFor="password" style={{ display: "block", fontSize: "0.8125rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.375rem" }}>
                 Contrasena
               </label>
               <div style={{ position: "relative" }}>
                 <input
+                  id="password"
                   className="input-field"
                   type={showPassword ? "text" : "password"}
                   placeholder="Tu contrasena"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
+                  aria-invalid={errors.password ? "true" : "false"}
                   style={{ width: "100%", paddingRight: "2.75rem" }}
+                  {...register("password")}
                 />
                 <button
                   type="button"
@@ -165,21 +183,26 @@ export default function LoginPage() {
                   )}
                 </button>
               </div>
+              {errors.password && (
+                <p role="alert" style={{ fontSize: "0.75rem", color: "var(--red)", marginTop: "0.25rem" }}>
+                  {errors.password.message}
+                </p>
+              )}
             </div>
 
-            {error && (
-              <div style={{ padding: "0.75rem", borderRadius: "var(--radius)", background: "var(--red-soft)", color: "var(--red)", fontSize: "0.8125rem", textAlign: "center" }}>
-                {error}
+            {(serverError || errors.root) && (
+              <div role="alert" style={{ padding: "0.75rem", borderRadius: "var(--radius)", background: "var(--red-soft)", color: "var(--red)", fontSize: "0.8125rem", textAlign: "center" }}>
+                {serverError || errors.root?.message}
               </div>
             )}
 
             <button
               type="submit"
               className="btn btn-primary"
-              disabled={loading}
-              style={{ width: "100%", padding: "0.875rem", fontSize: "1rem", opacity: loading ? 0.6 : 1 }}
+              disabled={isSubmitting}
+              style={{ width: "100%", padding: "0.875rem", fontSize: "1rem", opacity: isSubmitting ? 0.6 : 1 }}
             >
-              {loading ? "Entrando..." : "Iniciar sesion"}
+              {isSubmitting ? "Entrando..." : "Iniciar sesion"}
             </button>
           </form>
 

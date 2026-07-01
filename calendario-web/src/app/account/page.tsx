@@ -2,25 +2,31 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { updateProfileSchema, changePasswordSchema } from "@/lib/schemas"
+import type { z } from "zod"
+import { SkeletonPage } from "@/components/Skeleton"
+
+type EmailForm = z.infer<typeof updateProfileSchema>
+type PasswordForm = z.infer<typeof changePasswordSchema>
 
 export default function AccountPage() {
   const router = useRouter()
   const [user, setUser] = useState<{ username: string; email: string | null } | null>(null)
   const [loading, setLoading] = useState(true)
-
-  // Email
-  const [email, setEmail] = useState("")
-  const [emailSaving, setEmailSaving] = useState(false)
   const [emailMsg, setEmailMsg] = useState("")
-  const [emailError, setEmailError] = useState("")
-
-  // Password
-  const [oldPassword, setOldPassword] = useState("")
-  const [newPassword, setNewPassword] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
-  const [pwSaving, setPwSaving] = useState(false)
   const [pwMsg, setPwMsg] = useState("")
-  const [pwError, setPwError] = useState("")
+
+  const emailForm = useForm<EmailForm>({
+    resolver: zodResolver(updateProfileSchema),
+    defaultValues: { email: "" },
+  })
+
+  const passwordForm = useForm<PasswordForm>({
+    resolver: zodResolver(changePasswordSchema),
+    defaultValues: { oldPassword: "", newPassword: "", confirmPassword: "" },
+  })
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -31,61 +37,49 @@ export default function AccountPage() {
           return
         }
         setUser(data.user)
-        setEmail(data.user?.email || "")
+        emailForm.reset({ email: data.user?.email || "" })
       })
       .catch(() => router.replace("/"))
       .finally(() => setLoading(false))
-  }, [router])
+  }, [router, emailForm])
 
-  async function handleUpdateEmail(e: React.FormEvent) {
-    e.preventDefault()
+  async function handleUpdateEmail(data: EmailForm) {
     setEmailMsg("")
-    setEmailError("")
-    setEmailSaving(true)
     try {
       const res = await fetch("/api/auth/me", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim() || null }),
+        body: JSON.stringify({ email: data.email?.trim() || null }),
       })
-      const data = await res.json()
+      const response = await res.json()
       if (!res.ok) {
-        setEmailError(data.error || "Error al actualizar email")
+        emailForm.setError("root", { message: response.error || "Error al actualizar email" })
         return
       }
-      setUser((u) => (u ? { ...u, email: data.email } : u))
+      setUser((u) => (u ? { ...u, email: response.email } : u))
       setEmailMsg("Email actualizado correctamente")
     } catch {
-      setEmailError("Error de conexion")
-    } finally {
-      setEmailSaving(false)
+      emailForm.setError("root", { message: "Error de conexion" })
     }
   }
 
-  async function handleChangePassword(e: React.FormEvent) {
-    e.preventDefault()
+  async function handleChangePassword(data: PasswordForm) {
     setPwMsg("")
-    setPwError("")
-    setPwSaving(true)
     try {
       const res = await fetch("/api/auth/change-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ oldPassword, newPassword, confirmPassword }),
+        body: JSON.stringify(data),
       })
-      const data = await res.json()
+      const response = await res.json()
       if (!res.ok) {
-        setPwError(data.error || "Error al cambiar contrasena")
+        passwordForm.setError("root", { message: response.error || "Error al cambiar contrasena" })
         return
       }
       setPwMsg("Contrasena actualizada correctamente")
-      setOldPassword("")
-      setNewPassword("")
-      setConfirmPassword("")
+      passwordForm.reset()
     } catch {
-      setPwError("Error de conexion")
-    } finally {
-      setPwSaving(false)
+      passwordForm.setError("root", { message: "Error de conexion" })
     }
   }
 
@@ -95,14 +89,7 @@ export default function AccountPage() {
   }
 
   if (loading) {
-    return (
-      <>
-        <div className="bg-pattern" /><div className="bg-glow" /><div className="bg-glow-2" />
-        <main style={{ maxWidth: "36rem", margin: "0 auto", padding: "6rem 1.5rem 2rem", position: "relative", zIndex: 1 }}>
-          <div style={{ textAlign: "center", padding: "4rem", color: "var(--text-muted)" }}>Cargando...</div>
-        </main>
-      </>
-    )
+    return <SkeletonPage />
   }
 
   return (
@@ -131,58 +118,82 @@ export default function AccountPage() {
           </div>
 
           {/* Email */}
-          <form onSubmit={handleUpdateEmail} style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+          <form onSubmit={emailForm.handleSubmit(handleUpdateEmail)} style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }} noValidate>
             <div>
-              <label style={{ display: "block", fontSize: "0.8125rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.375rem" }}>
+              <label htmlFor="account-email" style={{ display: "block", fontSize: "0.8125rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.375rem" }}>
                 Email
               </label>
               <div style={{ display: "flex", gap: "0.5rem" }}>
                 <input
+                  id="account-email"
                   className="input-field"
                   type="email"
                   placeholder="tu@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  aria-invalid={emailForm.formState.errors.email ? "true" : "false"}
                   style={{ flex: 1 }}
+                  {...emailForm.register("email")}
                 />
-                <button type="submit" className="btn btn-primary" disabled={emailSaving}
+                <button type="submit" className="btn btn-primary" disabled={emailForm.formState.isSubmitting}
                   style={{ padding: "0.5rem 1rem", fontSize: "0.8125rem", whiteSpace: "nowrap" }}>
-                  {emailSaving ? "..." : "Guardar"}
+                  {emailForm.formState.isSubmitting ? "..." : "Guardar"}
                 </button>
               </div>
               <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "0.25rem", display: "block" }}>
                 {user?.email ? "Dejalo vacio para eliminar el email." : "Opcional. Necesario para recuperar contrasena."}
               </span>
+              {emailForm.formState.errors.email && (
+                <p role="alert" style={{ fontSize: "0.75rem", color: "var(--red)", marginTop: "0.25rem" }}>
+                  {emailForm.formState.errors.email.message}
+                </p>
+              )}
             </div>
-            {emailMsg && <div style={{ padding: "0.625rem", borderRadius: "var(--radius)", background: "var(--green-soft, #dcfce7)", color: "var(--green, #16a34a)", fontSize: "0.8125rem", textAlign: "center" }}>{emailMsg}</div>}
-            {emailError && <div style={{ padding: "0.625rem", borderRadius: "var(--radius)", background: "var(--red-soft)", color: "var(--red)", fontSize: "0.8125rem", textAlign: "center" }}>{emailError}</div>}
+            {emailMsg && <div role="status" style={{ padding: "0.625rem", borderRadius: "var(--radius)", background: "var(--green-soft, #dcfce7)", color: "var(--green, #16a34a)", fontSize: "0.8125rem", textAlign: "center" }}>{emailMsg}</div>}
+            {emailForm.formState.errors.root && <div role="alert" style={{ padding: "0.625rem", borderRadius: "var(--radius)", background: "var(--red-soft)", color: "var(--red)", fontSize: "0.8125rem", textAlign: "center" }}>{emailForm.formState.errors.root.message}</div>}
           </form>
         </div>
 
         {/* Change Password */}
         <div className="surface-elevated" style={{ padding: "2rem", marginBottom: "1.5rem" }}>
           <h2 style={{ fontSize: "1rem", fontWeight: 700, marginBottom: "1.25rem" }}>Cambiar contrasena</h2>
-          <form onSubmit={handleChangePassword} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+          <form onSubmit={passwordForm.handleSubmit(handleChangePassword)} style={{ display: "flex", flexDirection: "column", gap: "1rem" }} noValidate>
             <div>
-              <label style={{ display: "block", fontSize: "0.8125rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.375rem" }}>Contrasena actual</label>
-              <input className="input-field" type="password" placeholder="Tu contrasena actual" value={oldPassword}
-                onChange={(e) => setOldPassword(e.target.value)} required />
+              <label htmlFor="pw-old" style={{ display: "block", fontSize: "0.8125rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.375rem" }}>Contrasena actual</label>
+              <input id="pw-old" className="input-field" type="password" placeholder="Tu contrasena actual"
+                aria-invalid={passwordForm.formState.errors.oldPassword ? "true" : "false"}
+                {...passwordForm.register("oldPassword")} />
+              {passwordForm.formState.errors.oldPassword && (
+                <p role="alert" style={{ fontSize: "0.75rem", color: "var(--red)", marginTop: "0.25rem" }}>
+                  {passwordForm.formState.errors.oldPassword.message}
+                </p>
+              )}
             </div>
             <div>
-              <label style={{ display: "block", fontSize: "0.8125rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.375rem" }}>Contrasena nueva</label>
-              <input className="input-field" type="password" placeholder="Min. 6 caracteres" value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)} required minLength={6} />
+              <label htmlFor="pw-new" style={{ display: "block", fontSize: "0.8125rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.375rem" }}>Contrasena nueva</label>
+              <input id="pw-new" className="input-field" type="password" placeholder="Min. 6 caracteres"
+                aria-invalid={passwordForm.formState.errors.newPassword ? "true" : "false"}
+                {...passwordForm.register("newPassword")} />
+              {passwordForm.formState.errors.newPassword && (
+                <p role="alert" style={{ fontSize: "0.75rem", color: "var(--red)", marginTop: "0.25rem" }}>
+                  {passwordForm.formState.errors.newPassword.message}
+                </p>
+              )}
             </div>
             <div>
-              <label style={{ display: "block", fontSize: "0.8125rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.375rem" }}>Confirmar contrasena nueva</label>
-              <input className="input-field" type="password" placeholder="Repite la contrasena nueva" value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)} required minLength={6} />
+              <label htmlFor="pw-confirm" style={{ display: "block", fontSize: "0.8125rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.375rem" }}>Confirmar contrasena nueva</label>
+              <input id="pw-confirm" className="input-field" type="password" placeholder="Repite la contrasena nueva"
+                aria-invalid={passwordForm.formState.errors.confirmPassword ? "true" : "false"}
+                {...passwordForm.register("confirmPassword")} />
+              {passwordForm.formState.errors.confirmPassword && (
+                <p role="alert" style={{ fontSize: "0.75rem", color: "var(--red)", marginTop: "0.25rem" }}>
+                  {passwordForm.formState.errors.confirmPassword.message}
+                </p>
+              )}
             </div>
-            {pwError && <div style={{ padding: "0.625rem", borderRadius: "var(--radius)", background: "var(--red-soft)", color: "var(--red)", fontSize: "0.8125rem", textAlign: "center" }}>{pwError}</div>}
-            {pwMsg && <div style={{ padding: "0.625rem", borderRadius: "var(--radius)", background: "var(--green-soft, #dcfce7)", color: "var(--green, #16a34a)", fontSize: "0.8125rem", textAlign: "center" }}>{pwMsg}</div>}
-            <button type="submit" className="btn btn-primary" disabled={pwSaving}
-              style={{ width: "100%", padding: "0.875rem", fontSize: "1rem", opacity: pwSaving ? 0.6 : 1 }}>
-              {pwSaving ? "Guardando..." : "Cambiar contrasena"}
+            {passwordForm.formState.errors.root && <div role="alert" style={{ padding: "0.625rem", borderRadius: "var(--radius)", background: "var(--red-soft)", color: "var(--red)", fontSize: "0.8125rem", textAlign: "center" }}>{passwordForm.formState.errors.root.message}</div>}
+            {pwMsg && <div role="status" style={{ padding: "0.625rem", borderRadius: "var(--radius)", background: "var(--green-soft, #dcfce7)", color: "var(--green, #16a34a)", fontSize: "0.8125rem", textAlign: "center" }}>{pwMsg}</div>}
+            <button type="submit" className="btn btn-primary" disabled={passwordForm.formState.isSubmitting}
+              style={{ width: "100%", padding: "0.875rem", fontSize: "1rem", opacity: passwordForm.formState.isSubmitting ? 0.6 : 1 }}>
+              {passwordForm.formState.isSubmitting ? "Guardando..." : "Cambiar contrasena"}
             </button>
           </form>
         </div>
