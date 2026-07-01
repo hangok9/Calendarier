@@ -156,7 +156,6 @@ export default function ResumenView({
         </h3>
         <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
           {stats.personStats.map((ps) => {
-            const totalAssigned = Object.values(ps.codes).reduce((a, b) => a + b, 0)
             const pctFree = totalDays > 0 ? Math.round((ps.free / totalDays) * 100) : 0
             return (
               <div key={ps.id} style={{ padding: "0.75rem 1rem", borderRadius: "0.75rem", background: "var(--bg)", border: "1px solid var(--border-light)" }}>
@@ -222,7 +221,6 @@ export default function ResumenView({
             <tbody>
               {stats.dayRows.map((row) => {
                 const coverageSum = COVERAGE_CODES.reduce((s, c) => s + row.coverage[c], 0)
-                const totalMarked = coverageSum + row.otros
                 return (
                   <tr key={row.dateStr} style={{ borderBottom: "1px solid var(--border-light)" }}>
                     <td style={{ padding: "0.5rem 0.625rem", fontWeight: 500, whiteSpace: "nowrap", position: "sticky", left: 0, background: "var(--surface)", zIndex: 0 }}>

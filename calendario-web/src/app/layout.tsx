@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import "./globals.css"
+import { ToastProvider } from "@/components/Toast"
 
 export const metadata: Metadata = {
   title: "Calenadarier — Disponibilidad de Grupo",
@@ -21,7 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <a href="#main-content" className="skip-link" style={{ position: "absolute", left: "-9999px", top: 0, zIndex: 999, padding: "0.75rem 1.5rem", background: "var(--accent)", color: "#fff", fontWeight: 600, fontSize: "0.875rem", textDecoration: "none" }}>
           Saltar al contenido principal
         </a>
-        {children}
+        <ToastProvider>{children}</ToastProvider>
       </body>
     </html>
   )

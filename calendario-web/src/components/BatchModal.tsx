@@ -1,12 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { batchAvailabilitySchema } from "@/lib/schemas"
 import type { z } from "zod"
 import { CODES, CODE_SHORT } from "@/lib/constants"
 import type { Calendar, Person } from "@/types"
+import { useToast } from "./Toast"
 
 type BatchForm = z.infer<typeof batchAvailabilitySchema>
 
@@ -24,12 +25,12 @@ export default function BatchModal({
   onComplete: () => void
 }) {
   const LIBRE = "__libre__"
+  const { toast } = useToast()
   const {
     register,
     handleSubmit,
     watch,
     formState: { errors, isSubmitting },
-    setError: setFormError,
   } = useForm<BatchForm>({
     resolver: zodResolver(batchAvailabilitySchema),
     defaultValues: { personId: session.person_id, code: CODES[0], startDate: "", endDate: "" },
@@ -37,10 +38,55 @@ export default function BatchModal({
 
   const selectedCode = watch("code")
   const isClear = selectedCode === LIBRE
-  const [result, setResult] = useState<string | null>(null)
+  const [serverError, setServerError] = useState<string | null>(null)
+  const dialogRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose()
+    }
+    document.addEventListener("keydown", handleKey)
+    return () => document.removeEventListener("keydown", handleKey)
+  }, [onClose])
+
+  useEffect(() => {
+    const el = dialogRef.current
+    if (!el) return
+    const focusable = el.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    )
+    if (focusable.length > 0) focusable[0].focus()
+  }, [])
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    const el = dialogRef.current
+    if (!el) return
+    const focusable = Array.from(
+      el.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      )
+    )
+    if (focusable.length === 0) return
+    const first = focusable[0]
+    const last = focusable[focusable.length - 1]
+
+    if (e.key === "Tab") {
+      if (e.shiftKey) {
+        if (document.activeElement === first) {
+          e.preventDefault()
+          last.focus()
+        }
+      } else {
+        if (document.activeElement === last) {
+          e.preventDefault()
+          first.focus()
+        }
+      }
+    }
+  }, [])
 
   async function handleFormSubmit(data: BatchForm) {
-    setResult(null)
+    setServerError(null)
     try {
       const res = await fetch(`/api/calendars/${calendar.slug}/batch`, {
         method: "POST",
@@ -56,13 +102,16 @@ export default function BatchModal({
       const response = await res.json()
 
       if (res.ok) {
-        setResult(isClear ? `Limpiados ${response.updated} dias` : `Actualizados ${response.updated} dias como ${data.code}`)
-        setTimeout(onComplete, 1500)
+        const msg = isClear
+          ? `Limpiados ${response.updated} dias`
+          : `Actualizados ${response.updated} dias como ${data.code}`
+        toast(msg, "success")
+        onComplete()
       } else {
-        setResult(response.error || "Error")
+        setServerError(response.error || "Error al procesar")
       }
     } catch {
-      setResult("Error de conexion")
+      setServerError("Error de conexion")
     }
   }
 
@@ -82,6 +131,10 @@ export default function BatchModal({
       onClick={onClose}
     >
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="batch-title"
         className="surface-elevated"
         style={{
           width: "100%",
@@ -90,8 +143,10 @@ export default function BatchModal({
           animation: "slideDown 0.3s ease",
         }}
         onClick={(e) => e.stopPropagation()}
+        onKeyDown={handleKeyDown}
       >
         <h3
+          id="batch-title"
           style={{
             fontSize: "1.125rem",
             fontWeight: 700,
@@ -124,6 +179,7 @@ export default function BatchModal({
               className="input-field"
               style={{ appearance: "auto" }}
               aria-invalid={errors.personId ? "true" : "false"}
+              aria-describedby={errors.personId ? "batch-person-err" : undefined}
               {...register("personId")}
             >
               {people.map((p) => (
@@ -132,6 +188,11 @@ export default function BatchModal({
                 </option>
               ))}
             </select>
+            {errors.personId && (
+              <p id="batch-person-err" role="alert" style={{ fontSize: "0.75rem", color: "var(--red)", marginTop: "0.25rem" }}>
+                {errors.personId.message}
+              </p>
+            )}
           </div>
 
           <div>
@@ -180,8 +241,14 @@ export default function BatchModal({
               className="input-field"
               type="date"
               aria-invalid={errors.startDate ? "true" : "false"}
+              aria-describedby={errors.startDate ? "batch-start-err" : undefined}
               {...register("startDate")}
             />
+            {errors.startDate && (
+              <p id="batch-start-err" role="alert" style={{ fontSize: "0.75rem", color: "var(--red)", marginTop: "0.25rem" }}>
+                {errors.startDate.message}
+              </p>
+            )}
           </div>
 
           <div>
@@ -202,23 +269,19 @@ export default function BatchModal({
               className="input-field"
               type="date"
               aria-invalid={errors.endDate ? "true" : "false"}
+              aria-describedby={errors.endDate ? "batch-end-err" : undefined}
               {...register("endDate")}
             />
+            {errors.endDate && (
+              <p id="batch-end-err" role="alert" style={{ fontSize: "0.75rem", color: "var(--red)", marginTop: "0.25rem" }}>
+                {errors.endDate.message}
+              </p>
+            )}
           </div>
 
-          {result && (
-            <div
-              style={{
-                padding: "0.75rem",
-                borderRadius: "var(--radius)",
-                background: "var(--green-soft)",
-                color: "var(--green)",
-                fontSize: "0.8125rem",
-                textAlign: "center",
-                fontWeight: 600,
-              }}
-            >
-              {result}
+          {serverError && (
+            <div role="alert" style={{ padding: "0.75rem", borderRadius: "var(--radius)", background: "var(--red-soft)", color: "var(--red)", fontSize: "0.8125rem", textAlign: "center", fontWeight: 600 }}>
+              {serverError}
             </div>
           )}
 

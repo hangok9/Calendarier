@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -8,17 +8,20 @@ import { createCalendarSchema } from "@/lib/schemas"
 import type { z } from "zod"
 import { MONTH_SHORT } from "@/lib/constants"
 import { SkeletonPage } from "@/components/Skeleton"
+import { useToast } from "@/components/Toast"
 
 type CreateCalendarForm = z.infer<typeof createCalendarSchema>
 
 export default function DashboardPage() {
   const router = useRouter()
+  const { toast } = useToast()
   const [user, setUser] = useState<{ username: string } | null>(null)
   const [calendars, setCalendars] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
   const [newYear, setNewYear] = useState(2026)
   const [newMonths, setNewMonths] = useState<number[]>([7, 8])
+  const createDialogRef = useRef<HTMLDivElement>(null)
 
   const createForm = useForm<CreateCalendarForm>({
     resolver: zodResolver(createCalendarSchema),
@@ -54,6 +57,49 @@ export default function DashboardPage() {
       .finally(() => setLoading(false))
   }, [user])
 
+  useEffect(() => {
+    if (!showCreate) return
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowCreate(false)
+    }
+    document.addEventListener("keydown", handleKey)
+    const el = createDialogRef.current
+    if (el) {
+      const focusable = el.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      )
+      if (focusable.length > 0) focusable[0].focus()
+    }
+    return () => document.removeEventListener("keydown", handleKey)
+  }, [showCreate])
+
+  const handleCreateKeyDown = useCallback((e: React.KeyboardEvent) => {
+    const el = createDialogRef.current
+    if (!el) return
+    const focusable = Array.from(
+      el.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      )
+    )
+    if (focusable.length === 0) return
+    const first = focusable[0]
+    const last = focusable[focusable.length - 1]
+
+    if (e.key === "Tab") {
+      if (e.shiftKey) {
+        if (document.activeElement === first) {
+          e.preventDefault()
+          last.focus()
+        }
+      } else {
+        if (document.activeElement === last) {
+          e.preventDefault()
+          first.focus()
+        }
+      }
+    }
+  }, [])
+
   async function handleCreate(data: CreateCalendarForm) {
     try {
       const res = await fetch("/api/calendars", {
@@ -74,6 +120,7 @@ export default function DashboardPage() {
         return
       }
 
+      toast(`Calendario "${data.name}" creado`, "success")
       setShowCreate(false)
       createForm.reset()
       router.push(`/calendario/${response.calendar.slug}`)
@@ -116,8 +163,17 @@ export default function DashboardPage() {
 
         {showCreate && (
           <div style={{ position: "fixed", inset: 0, zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.4)", padding: "1rem" }} onClick={() => setShowCreate(false)}>
-            <div className="surface-elevated" style={{ width: "100%", maxWidth: "28rem", padding: "2rem", maxHeight: "90vh", overflow: "auto" }} onClick={(e) => e.stopPropagation()}>
-              <h2 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "1.5rem" }}>Crear calendario</h2>
+            <div
+              ref={createDialogRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="create-cal-title"
+              className="surface-elevated"
+              style={{ width: "100%", maxWidth: "28rem", padding: "2rem", maxHeight: "90vh", overflow: "auto" }}
+              onClick={(e) => e.stopPropagation()}
+              onKeyDown={handleCreateKeyDown}
+            >
+              <h2 id="create-cal-title" style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "1.5rem" }}>Crear calendario</h2>
               <form onSubmit={createForm.handleSubmit(handleCreate)} style={{ display: "flex", flexDirection: "column", gap: "1rem" }} noValidate>
                 <div>
                   <label htmlFor="cal-name" style={{ display: "block", fontSize: "0.8125rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.375rem" }}>Nombre del grupo</label>
@@ -134,6 +190,7 @@ export default function DashboardPage() {
                   <label htmlFor="cal-myname" style={{ display: "block", fontSize: "0.8125rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.375rem" }}>Tu nombre en este grupo</label>
                   <input id="cal-myname" className="input-field" type="text" placeholder={user?.username?.toUpperCase() || ""}
                     aria-invalid={createForm.formState.errors.myName ? "true" : "false"}
+                    aria-describedby="cal-myname-hint"
                     {...createForm.register("myName", {
                       onChange: (e) => { e.target.value = e.target.value.toUpperCase() },
                     })} />
@@ -142,7 +199,7 @@ export default function DashboardPage() {
                       {createForm.formState.errors.myName.message}
                     </p>
                   )}
-                  <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "0.25rem", display: "block" }}>Obligatorio. Tus amigos te conocen asi.</span>
+                  <span id="cal-myname-hint" style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "0.25rem", display: "block" }}>Obligatorio. Tus amigos te conocen asi.</span>
                 </div>
                 <div style={{ display: "flex", gap: "0.75rem" }}>
                   <div style={{ flex: 1 }}>

@@ -20,7 +20,11 @@ ALTER TABLE plan_responses ENABLE ROW LEVEL SECURITY;
 -- 2. POLITICAS RLS
 -- ============================================================
 
--- USERS: cada usuario solo ve/edita su propio perfil
+-- USERS: login puede buscar usuarios, cada usuario ve/edita su propio perfil
+CREATE POLICY "users_select_login" ON users
+  FOR SELECT TO anon
+  USING (true);
+
 CREATE POLICY "users_select_own" ON users
   FOR SELECT TO authenticated
   USING (id = auth.uid());

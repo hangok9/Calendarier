@@ -124,21 +124,22 @@ export default function AccountPage() {
                 Email
               </label>
               <div style={{ display: "flex", gap: "0.5rem" }}>
-                <input
-                  id="account-email"
-                  className="input-field"
-                  type="email"
-                  placeholder="tu@email.com"
-                  aria-invalid={emailForm.formState.errors.email ? "true" : "false"}
-                  style={{ flex: 1 }}
-                  {...emailForm.register("email")}
-                />
+                  <input
+                    id="account-email"
+                    className="input-field"
+                    type="email"
+                    placeholder="tu@email.com"
+                    aria-invalid={emailForm.formState.errors.email ? "true" : "false"}
+                    aria-describedby="account-email-hint"
+                    style={{ flex: 1 }}
+                    {...emailForm.register("email")}
+                  />
                 <button type="submit" className="btn btn-primary" disabled={emailForm.formState.isSubmitting}
                   style={{ padding: "0.5rem 1rem", fontSize: "0.8125rem", whiteSpace: "nowrap" }}>
                   {emailForm.formState.isSubmitting ? "..." : "Guardar"}
                 </button>
               </div>
-              <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "0.25rem", display: "block" }}>
+              <span id="account-email-hint" style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "0.25rem", display: "block" }}>
                 {user?.email ? "Dejalo vacio para eliminar el email." : "Opcional. Necesario para recuperar contrasena."}
               </span>
               {emailForm.formState.errors.email && (
@@ -147,8 +148,10 @@ export default function AccountPage() {
                 </p>
               )}
             </div>
-            {emailMsg && <div role="status" style={{ padding: "0.625rem", borderRadius: "var(--radius)", background: "var(--green-soft, #dcfce7)", color: "var(--green, #16a34a)", fontSize: "0.8125rem", textAlign: "center" }}>{emailMsg}</div>}
-            {emailForm.formState.errors.root && <div role="alert" style={{ padding: "0.625rem", borderRadius: "var(--radius)", background: "var(--red-soft)", color: "var(--red)", fontSize: "0.8125rem", textAlign: "center" }}>{emailForm.formState.errors.root.message}</div>}
+            <div aria-live="polite">
+              {emailMsg && <div role="status" style={{ padding: "0.625rem", borderRadius: "var(--radius)", background: "var(--green-soft, #dcfce7)", color: "var(--green, #16a34a)", fontSize: "0.8125rem", textAlign: "center" }}>{emailMsg}</div>}
+              {emailForm.formState.errors.root && <div role="alert" style={{ padding: "0.625rem", borderRadius: "var(--radius)", background: "var(--red-soft)", color: "var(--red)", fontSize: "0.8125rem", textAlign: "center" }}>{emailForm.formState.errors.root.message}</div>}
+            </div>
           </form>
         </div>
 

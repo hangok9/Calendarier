@@ -190,11 +190,13 @@ export default function LoginPage() {
               )}
             </div>
 
-            {(serverError || errors.root) && (
-              <div role="alert" style={{ padding: "0.75rem", borderRadius: "var(--radius)", background: "var(--red-soft)", color: "var(--red)", fontSize: "0.8125rem", textAlign: "center" }}>
-                {serverError || errors.root?.message}
-              </div>
-            )}
+            <div aria-live="polite">
+              {(serverError || errors.root) && (
+                <div role="alert" style={{ padding: "0.75rem", borderRadius: "var(--radius)", background: "var(--red-soft)", color: "var(--red)", fontSize: "0.8125rem", textAlign: "center" }}>
+                  {serverError || errors.root?.message}
+                </div>
+              )}
+            </div>
 
             <button
               type="submit"
