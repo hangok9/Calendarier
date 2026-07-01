@@ -112,24 +112,24 @@ INSERT INTO calendars (slug, name, year, months) VALUES
 -- ============================================================
 
 INSERT INTO users (username, password) VALUES
-  ('elias',    '$2b$10$adJBKYfkLn4zLkckUHxYl.bsQY3Y4AImQbIrU/kqyqNQNJBcWCnG2'),
-  ('ponsa',    '$2b$10$nxNgti9X0hk1KxMeKedRnunJTUWOr7KB0rBYAFX6nuMLnTRu/WRHu'),
-  ('ferran',   '$2b$10$E4cLTJ2i2FRKzWPUgLbHreMgJreKvdgzsfo39ss7u9WqyYvG1jac2'),
-  ('august',   '$2b$10$977V0ZN5u920Xx1/GxajF.jQf43XBFWlz5Mgjtt7KYMUa7Q4HufXW'),
-  ('joan',     '$2b$10$qldyIN4g.um1c8Nx81zRT.KXmZ7lGXGwKrkWgJxFKGo1qLZepLi12'),
-  ('grau',     '$2b$10$coCNqJm/UItPFECbyt4a0O0vmUZ91SGyxcRo4Gkwz3xFxbGGgc0um'),
-  ('pol',      '$2b$10$Ohe/ojiYaw8pJXBuCu6Q5e6SMksWkrssT5ccroiPkUtv1Zsf7RIQi'),
-  ('resi',     '$2b$10$KXKFjeDgOnLGfj.p5e7fWOXDZ9fuSn6Af9taj8pKEjcyW9je5TOfm'),
-  ('oscar',    '$2b$10$3ni81M6C23MNVKKGglwioe2MZr7n1iSt91XUq/6X3hrLsBSGpwFki'),
-  ('clara',    '$2b$10$0oEVVHlz8amCc2onWu9uTeFXouqlapf0ccim5wDF7O1qF9n7vubFG'),
-  ('anna',     '$2b$10$2GiN.wC8AlJX56J3pjZm6OTBzUeGO9ggz1nAHcR5/WLGzqpOWpa2K'),
-  ('pepe',     '$2b$10$AraOqdjn/xfMM7qttAu1xeF4q4lsXHLgP/TTxY207xbuH06LQ9/6q'),
-  ('ivan',     '$2b$10$fMZGDb1KH03qsR7clxN8oOTmflSrcdQTsDmfx4feUkgG3Y4aUvyJK'),
-  ('yeray',    '$2b$10$YF0xe/6Wql/vua6AAHqIpeyujLkmHP3c7/iCgNznw0NE04GH9oEVC'),
-  ('susanna',  '$2b$10$F.tyCY1XuoGYWBqPCVNIAewzJK8t.DlFzMHorB3DgUs4o.Jhw/Gmy'),
-  ('zua',      '$2b$10$aeOqYi7zGHar00iHtF1K8.Cfpv324SeZwjC7BfRHBjHj87ap.xaGW'),
-  ('anto',     '$2b$10$brZQbe61iPRP7cNtA.VfBuNyzryFRY.4jDZ2JHLY1Hdl4SXZbS.yu'),
-  ('cris',     '$2b$10$JyVse1X.iakmKNheIRcNTevt6WC1ljrjmt2TUUtWxPllq9wIh9IKG');
+  ('elias',    '$2b$10$QbnsDN3FM7Xfe2b3EumHf.eMCZ7xTMG1rXQ9BWhF0gfOOfDcBZf7S'),
+  ('ponsa',    '$2b$10$l/.aZE3OP4Xy2kY05ALtp.Ilk0CS4.xOKpXiVCApuLhelITRC.mXa'),
+  ('ferran',   '$2b$10$0epyCIqzs96.mdkXKo4.fuy.aIfO9I5413UwuX6koWHoItHskfoVK'),
+  ('august',   '$2b$10$VFdwgeLUDox6Xf5OpSfx0OxhxFs2ejn5s.ISsC4p.bRj.GlrnBb2m'),
+  ('joan',     '$2b$10$FQuQ.0oxymullg.1tJ5A2e/SSHNHkTOcNBzWUnYVC4l9xKMuMNSmG'),
+  ('grau',     '$2b$10$.dCQv9yFq..RFFbVTh0jXuNKGXh.Al0woMKI6HNZRJ8XKgmi5CcYG'),
+  ('pol',      '$2b$10$COBD7LehuHEsnowk8GA3oeEhqRATXIKj7oNa1n6HOvBj7JMsYFl2e'),
+  ('resi',     '$2b$10$XQGChrmzGlIJhRuNvryLgOkFoEAwL7HxhAPIE7O0vx6MJO4OoNZj.'),
+  ('oscar',    '$2b$10$zMT2S3tuowKwe9wr8ZU34u2kJYtKfmG.KmCsAqhVLgSU3HFH9XM3S'),
+  ('clara',    '$2b$10$5CmQFa5xR09MNeBfHVMfXuilUCMUfhPFOy2YcrJfhwoYQxnbBx5SO'),
+  ('anna',     '$2b$10$AkNQ5c3TJFP.j.K3f5Home7SNoIwpar87Zf7uwliOmFcY1Iq3Dpra'),
+  ('pepe',     '$2b$10$rqc0VlrRLd/P3XFj3bqo4.17cGNb2h.ZUMRCWKZ8qDxXqV1VuqLg2'),
+  ('ivan',     '$2b$10$SEq9UFeIPSIEHn4OGbq2XujaKvvvFoMZ0nNQFB8yrd1TOyu46FwG6'),
+  ('yeray',    '$2b$10$.ZUBDpNmRi7hnlZUjjF5MuVGqaEcP1eH4GOxKey/yN6dDA51KHxHW'),
+  ('susanna',  '$2b$10$gqLnrG7Pel93SiNkWjakGOLtnDJOK0Jls1zeEZE7XbrP5zGTc7sTq'),
+  ('zua',      '$2b$10$QBeY4z4TcmeCxEN77fOClOH/ZOdiz7svhuqayIaLO9F/gH6Mij2U2'),
+  ('anto',     '$2b$10$XJytOGgAawbcHjtwgAfBi.Rlm.9CtrYQo73eVBVNabA7H95JORP3a'),
+  ('cris',     '$2b$10$roR3YwIRa2SUFhGnceP2SuzKDSxAstLO3QxXx8hQ32rZyfQXUNbvK');
 
 -- ============================================================
 -- SEED: Personas (vinculadas a usuarios)
