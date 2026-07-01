@@ -37,9 +37,7 @@ export function apiError(err: unknown): NextResponse {
   }
   if (err instanceof Error) {
     console.error("Unhandled error:", err.message)
-    if (err.message === "No autorizado") {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 })
-    }
+    return NextResponse.json({ error: err.message }, { status: 500 })
   }
   console.error("Internal error:", err)
   return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 })
