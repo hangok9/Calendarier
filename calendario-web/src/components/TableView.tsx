@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, Fragment } from "react"
 import { MONTH_NAMES, CODES, CODE_COLORS } from "@/lib/constants"
 import { useAvailMap, getCode } from "@/hooks/useAvailMap"
 import type { Calendar, Person, Availability } from "@/types"
@@ -101,15 +101,15 @@ export default function TableView({
                 ).length
 
                 return (
-                  <>
+                  <Fragment key={row.dateStr}>
                     {showMonth && (
-                      <tr className="month-divider" key={`m-${row.month}`}>
+                      <tr className="month-divider">
                         <td colSpan={3 + people.length} style={{ position: "sticky", left: 0, background: "var(--accent-soft)" }}>
                           {MONTH_NAMES[row.month]} {calendar.year}
                         </td>
                       </tr>
                     )}
-                    <tr key={row.dateStr} style={{ borderBottom: "1px solid var(--border-light)" }}>
+                    <tr style={{ borderBottom: "1px solid var(--border-light)" }}>
                       <td style={{ position: "sticky", left: 0, zIndex: 1, background: "var(--surface)", borderRight: "1px solid var(--border)", fontWeight: 500, fontSize: "0.75rem", whiteSpace: "nowrap" }}>
                         {row.dateStr.slice(5)}
                       </td>
@@ -177,7 +177,7 @@ export default function TableView({
                         </span>
                       </td>
                     </tr>
-                  </>
+                  </Fragment>
                 )
               })}
             </tbody>
