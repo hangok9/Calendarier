@@ -68,7 +68,7 @@ export async function generateUniqueSlug(name: string): Promise<string> {
   return slug
 }
 
-export async function enrichPeople(people: any[]) {
+export function enrichPeople(people: any[]) {
   return people.map((p) => ({
     ...p,
     display_name: p.alias || p.name,
