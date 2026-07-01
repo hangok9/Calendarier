@@ -29,7 +29,7 @@ export default function LoginPage() {
     fetch("/api/auth/me")
       .then((r) => r.json())
       .then((data) => {
-        if (!data.error) {
+        if (!data.error && data.user) {
           router.replace("/dashboard")
         }
       })

@@ -43,14 +43,31 @@ INSERT INTO users (username, password) VALUES
   ('cris',     '$2b$10$JyVse1X.iakmKNheIRcNTevt6WC1ljrjmt2TUUtWxPllq9wIh9IKG');
 
 -- 5. Linkear people a sus usuarios
--- Grupo (slug = 'grupo')
-UPDATE people SET user_id = (SELECT id FROM users WHERE username = LOWER(TRIM(name)))
-WHERE calendar_id = (SELECT id FROM calendars WHERE slug = 'grupo');
-
--- Barcelona (slug = 'barcelona')
-UPDATE people SET user_id = (SELECT id FROM users WHERE username = LOWER(TRIM(name)))
-WHERE calendar_id = (SELECT id FROM calendars WHERE slug = 'barcelona');
-
--- Cachorritas (slug = 'cachorritas')
-UPDATE people SET user_id = (SELECT id FROM users WHERE username = LOWER(TRIM(name)))
-WHERE calendar_id = (SELECT id FROM calendars WHERE slug = 'cachorritas');
+-- Usamos mapping explicito porque nombres como "Josep Maria" no equivalen a LOWER(TRIM(name))
+UPDATE people p SET user_id = u.id
+FROM (VALUES
+  ('Grupo',       'elias',    'Josep Maria'),
+  ('Grupo',       'pepe',     'Pepe'),
+  ('Grupo',       'ponsa',    'Alex'),
+  ('Grupo',       'ferran',   'Ferran'),
+  ('Grupo',       'august',   'August'),
+  ('Grupo',       'joan',     'Joan'),
+  ('Grupo',       'grau',     'Grau'),
+  ('Grupo',       'pol',      'Pol'),
+  ('Barcelona',   'resi',     'Jordi'),
+  ('Barcelona',   'oscar',    'Oscar'),
+  ('Barcelona',   'clara',    'Clara'),
+  ('Barcelona',   'anna',     'Anna'),
+  ('Barcelona',   'pepe',     'Pepe'),
+  ('Barcelona',   'ivan',     'Ivan'),
+  ('Barcelona',   'yeray',    'Yeray'),
+  ('Cachorritas', 'susanna',  'Susanna'),
+  ('Cachorritas', 'zua',      'Victor'),
+  ('Cachorritas', 'pepe',     'Pepe'),
+  ('Cachorritas', 'anto',     'Antonella'),
+  ('Cachorritas', 'elias',    'Josep Maria'),
+  ('Cachorritas', 'cris',     'Cristina')
+) AS mapping(cal_slug, username, person_name)
+JOIN users u ON u.username = mapping.username
+JOIN calendars c ON c.slug = mapping.cal_slug
+WHERE p.calendar_id = c.id AND p.name = mapping.person_name;

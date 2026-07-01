@@ -6,7 +6,9 @@
 -- ============================================================
 
 -- Calendarios: quien lo creo
-ALTER TABLE calendars ADD COLUMN IF NOT EXISTS created_by UUID REFERENCES users(id);
+-- NOTA: Ahora incluido en schema.sql directamente, pero se mantiene
+-- por compatibilidad con instalaciones que ya ejecutaron schema.sql antiguo
+ALTER TABLE calendars ADD COLUMN IF NOT EXISTS created_by UUID REFERENCES users(id) ON DELETE SET NULL;
 
 -- Personas: rol y apodo
 ALTER TABLE people ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'member' CHECK (role IN ('manager', 'member'));

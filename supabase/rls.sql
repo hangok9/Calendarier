@@ -289,14 +289,19 @@ CREATE INDEX IF NOT EXISTS idx_audit_log_action
 -- 5. NOTA: LA APP USA SU PROPIA AUTH (NO SUPABASE AUTH)
 -- ============================================================
 -- Las politicas RLS usan auth.uid() que funciona con la auth
--- de Supabase. Si NO usas Supabase Auth, las RLS con auth.uid()
--- no funcionaran directamente.
+-- de Supabase. Como este proyecto usa JWT custom (NO Supabase Auth),
+-- auth.uid() devuelve NULL y las RLS quedAN INOPERATIVAS.
 --
--- OPCION A: Migrar a Supabase Auth (recomendado)
--- OPCION B: Usar un enfoque mixto (service_role en API routes
---             + RLS desactivadas para authenticated/anon)
+-- La app usa la service_role key en las API routes para bypassear RLS,
+-- lo que significa que ESTAS POLITICAS NO ESTAN ACTIVAS actualmente.
 --
--- Por ahora, las RLS estan definidas pero NO afectan a las API
--- routes que usan service_role. Si en el futuro usas Supabase Auth,
--- descomenta el bloque de arriba.
+-- OPCION A: Migrar a Supabase Auth (recomendado para produccion real)
+--   - Sustituir JWT custom por supabase-js auth
+--   - Las RLS funcionarian con auth.uid() real
+--
+-- OPCION B: Eliminar estas politicas si se confirma que nunca se usara
+--   Supabase Auth. La seguridad se gestiona via middleware.ts + service_role.
+--
+-- OPCION C (hibrida): Usar service_role en API routes + RLS para acceso
+--   directo a BD (si algun cliente se conecta directamente).
 -- ============================================================

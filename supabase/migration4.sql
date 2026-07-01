@@ -10,8 +10,6 @@
 ALTER TABLE people ADD COLUMN IF NOT EXISTS primer_apellido TEXT;
 ALTER TABLE people ADD COLUMN IF NOT EXISTS segundo_apellido TEXT;
 
-ALTER TABLE calendars ADD COLUMN IF NOT EXISTS created_by UUID REFERENCES users(id);
-
 -- ============================================================
 -- Grupo
 -- ============================================================

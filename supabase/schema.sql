@@ -2,7 +2,7 @@
 -- CALENDARIER - Esquema Completo + Seed
 -- ============================================================
 -- 1. Ejecuta esto en SQL Editor de Supabase
--- 2. Todo incluido: tablas + seed data
+-- 2. Todo incluido: tablas + seed data + constraints + indices
 -- ============================================================
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
@@ -25,6 +25,7 @@ CREATE TABLE calendars (
   name        TEXT NOT NULL,
   year        INT NOT NULL DEFAULT 2026,
   months      INT[] NOT NULL DEFAULT '{7,8}',
+  created_by  UUID REFERENCES users(id) ON DELETE SET NULL,
   created_at  TIMESTAMPTZ DEFAULT now()
 );
 
@@ -36,6 +37,8 @@ CREATE TABLE people (
   segundo_apellido  TEXT,
   sort_order        INT NOT NULL DEFAULT 0,
   user_id           UUID REFERENCES users(id),
+  role              TEXT NOT NULL DEFAULT 'member' CHECK (role IN ('manager', 'member')),
+  alias             TEXT,
   UNIQUE(calendar_id, name)
 );
 
@@ -44,7 +47,7 @@ CREATE TABLE availability (
   calendar_id UUID NOT NULL REFERENCES calendars(id) ON DELETE CASCADE,
   person_id   UUID NOT NULL REFERENCES people(id) ON DELETE CASCADE,
   date        DATE NOT NULL,
-  code        TEXT,
+  code        TEXT CHECK (code IS NULL OR code IN ('TM', 'TT', 'TN', 'FV', 'FN', 'OC', 'RE', 'OT', 'CL')),
   updated_at  TIMESTAMPTZ DEFAULT now(),
   UNIQUE(person_id, date)
 );
@@ -57,8 +60,9 @@ CREATE TABLE custom_events (
   start_time  TIME,
   end_time    TIME,
   label       TEXT,
-  code        TEXT,
-  created_at  TIMESTAMPTZ DEFAULT now()
+  code        TEXT CHECK (code IS NULL OR code IN ('TM', 'TT', 'TN', 'FV', 'FN', 'OC', 'RE', 'OT', 'CL')),
+  created_at  TIMESTAMPTZ DEFAULT now(),
+  CHECK (start_time IS NULL OR end_time IS NULL OR end_time > start_time)
 );
 
 CREATE TABLE group_plans (
@@ -69,7 +73,8 @@ CREATE TABLE group_plans (
   start_date  DATE NOT NULL,
   end_date    DATE NOT NULL,
   created_by  UUID NOT NULL REFERENCES people(id),
-  created_at  TIMESTAMPTZ DEFAULT now()
+  created_at  TIMESTAMPTZ DEFAULT now(),
+  CHECK (end_date >= start_date)
 );
 
 CREATE TABLE plan_responses (
@@ -89,14 +94,22 @@ CREATE INDEX idx_availability_calendar_date
   ON availability(calendar_id, date);
 CREATE INDEX idx_availability_person
   ON availability(person_id);
+CREATE INDEX idx_availability_person_date
+  ON availability(person_id, date);
 CREATE INDEX idx_custom_events_calendar_date
   ON custom_events(calendar_id, date);
+CREATE INDEX idx_custom_events_person_date
+  ON custom_events(person_id, date);
 CREATE INDEX idx_group_plans_calendar
   ON group_plans(calendar_id);
 CREATE INDEX idx_plan_responses_plan
   ON plan_responses(plan_id);
+CREATE INDEX idx_plan_responses_person
+  ON plan_responses(person_id);
 CREATE INDEX idx_people_calendar_order
   ON people(calendar_id, sort_order);
+CREATE INDEX idx_people_calendar_user
+  ON people(calendar_id, user_id);
 
 -- ============================================================
 -- SEED: Calendarios
@@ -131,54 +144,58 @@ INSERT INTO users (username, password) VALUES
   ('anto',     crypt('anto2026',     gen_salt('bf', 10))),
   ('cris',     crypt('cris2026',     gen_salt('bf', 10)));
 
+-- Asignar pepe como creador de todos los calendarios
+UPDATE calendars
+SET created_by = (SELECT id FROM users WHERE username = 'pepe');
+
 -- ============================================================
 -- SEED: Personas (vinculadas a usuarios)
 -- ============================================================
 
 -- Grupo
-INSERT INTO people (calendar_id, name, primer_apellido, segundo_apellido, sort_order, user_id)
-SELECT c.id, name, primer_apellido, segundo_apellido, sort_order, u.id
+INSERT INTO people (calendar_id, name, primer_apellido, segundo_apellido, sort_order, user_id, role)
+SELECT c.id, p.name, p.primer_apellido, p.segundo_apellido, p.sort_order, u.id, p.role
 FROM (VALUES
-  ('Josep Maria', 'Elias',    'Eslava',    0, 'elias'),
-  ('Pepe',        'Merino',   'Delgado',   1, 'pepe'),
-  ('Alex',        'Ponsa',    'Ubago',     2, 'ponsa'),
-  ('Ferran',      'Oliver',   'Castella',  3, 'ferran'),
-  ('August',      'Escoda',   'Rebordosa', 4, 'august'),
-  ('Joan',        'Almirall', 'viñas',     5, 'joan'),
-  ('Grau',        'Buch',     'Rovira',    6, 'grau'),
-  ('Pol',         'Baulenas', 'Anton',     7, 'pol')
-) AS p(name, primer_apellido, segundo_apellido, sort_order, username)
+  ('Josep Maria', 'Elias',    'Eslava',    0, 'elias',    'manager'),
+  ('Pepe',        'Merino',   'Delgado',   1, 'pepe',     'manager'),
+  ('Alex',        'Ponsa',    'Ubago',     2, 'ponsa',    'member'),
+  ('Ferran',      'Oliver',   'Castella',  3, 'ferran',   'member'),
+  ('August',      'Escoda',   'Rebordosa', 4, 'august',   'member'),
+  ('Joan',        'Almirall', 'viñas',     5, 'joan',     'member'),
+  ('Grau',        'Buch',     'Rovira',    6, 'grau',     'member'),
+  ('Pol',         'Baulenas', 'Anton',     7, 'pol',      'member')
+) AS p(name, primer_apellido, segundo_apellido, sort_order, username, role)
 CROSS JOIN calendars c
 LEFT JOIN users u ON u.username = p.username
 WHERE c.slug = 'grupo';
 
 -- Barcelona
-INSERT INTO people (calendar_id, name, primer_apellido, segundo_apellido, sort_order, user_id)
-SELECT c.id, name, primer_apellido, segundo_apellido, sort_order, u.id
+INSERT INTO people (calendar_id, name, primer_apellido, segundo_apellido, sort_order, user_id, role)
+SELECT c.id, p.name, p.primer_apellido, p.segundo_apellido, p.sort_order, u.id, p.role
 FROM (VALUES
-  ('Jordi',   'Resina',   'Martinez',  0, 'resi'),
-  ('Oscar',   'Miguel',   'Sancho',    1, 'oscar'),
-  ('Clara',   'Font',     'Cabrafiga', 2, 'clara'),
-  ('Anna',    'Casas',    'Monfort',   3, 'anna'),
-  ('Pepe',    'Merino',   'Delgado',   4, 'pepe'),
-  ('Ivan',    'Rodriguez','Moliner',   5, 'ivan'),
-  ('Yeray',   'De Manuel','Alvarez',   6, 'yeray')
-) AS p(name, primer_apellido, segundo_apellido, sort_order, username)
+  ('Jordi',   'Resina',   'Martinez',    0, 'resi',    'manager'),
+  ('Oscar',   'Miguel',   'Sancho',      1, 'oscar',   'member'),
+  ('Clara',   'Font',     'Cabrafiga',   2, 'clara',   'member'),
+  ('Anna',    'Casas',    'Monfort',     3, 'anna',    'member'),
+  ('Pepe',    'Merino',   'Delgado',     4, 'pepe',    'manager'),
+  ('Ivan',    'Rodriguez','Moliner',     5, 'ivan',    'member'),
+  ('Yeray',   'De Manuel','Alvarez',     6, 'yeray',   'member')
+) AS p(name, primer_apellido, segundo_apellido, sort_order, username, role)
 CROSS JOIN calendars c
 LEFT JOIN users u ON u.username = p.username
 WHERE c.slug = 'barcelona';
 
 -- Cachorritas
-INSERT INTO people (calendar_id, name, primer_apellido, segundo_apellido, sort_order, user_id)
-SELECT c.id, name, primer_apellido, segundo_apellido, sort_order, u.id
+INSERT INTO people (calendar_id, name, primer_apellido, segundo_apellido, sort_order, user_id, role)
+SELECT c.id, p.name, p.primer_apellido, p.segundo_apellido, p.sort_order, u.id, p.role
 FROM (VALUES
-  ('Susanna',  'Mora',     'Undurraga',  0, 'susanna'),
-  ('Victor',   'Zuaza',    'Marti',      1, 'zua'),
-  ('Pepe',     'Merino',   'Delgado',    2, 'pepe'),
-  ('Antonella','Cristina', 'Rodriguez',  3, 'anto'),
-  ('Josep Maria','Elias',  'Eslava',     4, 'elias'),
-  ('Cristina', 'Acha',     'Duck',       5, 'cris')
-) AS p(name, primer_apellido, segundo_apellido, sort_order, username)
+  ('Susanna',  'Mora',     'Undurraga',  0, 'susanna', 'manager'),
+  ('Victor',   'Zuaza',    'Marti',      1, 'zua',     'member'),
+  ('Pepe',     'Merino',   'Delgado',    2, 'pepe',    'manager'),
+  ('Antonella','Cristina', 'Rodriguez',  3, 'anto',    'member'),
+  ('Josep Maria','Elias',  'Eslava',     4, 'elias',   'manager'),
+  ('Cristina', 'Acha',     'Duck',       5, 'cris',    'member')
+) AS p(name, primer_apellido, segundo_apellido, sort_order, username, role)
 CROSS JOIN calendars c
 LEFT JOIN users u ON u.username = p.username
 WHERE c.slug = 'cachorritas';
