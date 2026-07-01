@@ -226,7 +226,7 @@ export default function ResumenView({
                     <td style={{ padding: "0.5rem 0.625rem", fontWeight: 500, whiteSpace: "nowrap", position: "sticky", left: 0, background: "var(--surface)", zIndex: 0 }}>
                       {row.dateStr.slice(5)} <span style={{ color: row.dayName === "Sab" || row.dayName === "Dom" ? "#EF4444" : "var(--text-muted)", fontSize: "0.6875rem" }}>{row.dayName}</span>
                     </td>
-                    <td style={{ textAlign: "center", padding: "0.5rem 0.375rem", fontWeight: 700, color: row.libre === people.length ? "var(--emerald)" : "var(--text-muted)" }}>
+                    <td style={{ textAlign: "center", padding: "0.5rem 0.375rem", fontWeight: 700, color: row.libre === people.length ? (CODE_COLORS["Libre"]?.bg || "#22C55E") : "var(--text-muted)" }}>
                       {row.libre}
                     </td>
                     {COVERAGE_CODES.map((code) => (

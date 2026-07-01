@@ -139,7 +139,7 @@ export default function TableView({
                               <span
                                 className="badge"
                                 style={{
-                                  background: "var(--text-muted)",
+                                  background: CODE_COLORS["Libre"]?.bg || "#22C55E",
                                   color: "#fff",
                                   fontSize: "0.5625rem",
                                   display: "inline-flex",
@@ -172,7 +172,7 @@ export default function TableView({
                         )
                       })}
                       <td style={{ position: "sticky", right: 0, zIndex: 1, background: "var(--surface)", backgroundClip: "padding-box", textAlign: "center", fontWeight: 700, fontSize: "0.875rem", boxShadow: "-2px 0 4px rgba(0,0,0,0.03), -1px 0 0 var(--border)" }}>
-                        <span style={{ color: freeCount === people.length ? "var(--emerald)" : "var(--text)", display: "inline-flex", alignItems: "center", justifyContent: "center", minHeight: "44px" }}>
+                        <span style={{ color: freeCount === people.length ? (CODE_COLORS["Libre"]?.bg || "#22C55E") : "var(--text)", display: "inline-flex", alignItems: "center", justifyContent: "center", minHeight: "44px" }}>
                           {freeCount}
                         </span>
                       </td>

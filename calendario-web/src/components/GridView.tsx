@@ -194,7 +194,7 @@ export default function GridView({
                   const displayName = person.display_name || person.name
 
                   const style = isFree
-                    ? { background: "var(--gray-soft)", color: "var(--text-muted)", dotColor: "var(--text-muted)" }
+                    ? { background: CODE_COLORS["Libre"]?.chipBg || "var(--green-soft)", color: CODE_COLORS["Libre"]?.chipText || "#166534", dotColor: CODE_COLORS["Libre"]?.bg || "#22C55E" }
                     : { background: CODE_COLORS[code!]?.chipBg || "var(--gray-soft)", color: CODE_COLORS[code!]?.chipText || "var(--text)", dotColor: CODE_COLORS[code!]?.bg || "var(--gray)" }
 
                   return (
@@ -236,7 +236,7 @@ export default function GridView({
           Leyenda
         </span>
         <span style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.75rem" }}>
-          <span style={{ width: "0.5rem", height: "0.5rem", borderRadius: "50%", background: "var(--text-muted)" }} />
+          <span style={{ width: "0.5rem", height: "0.5rem", borderRadius: "50%", background: CODE_COLORS["Libre"]?.bg || "#22C55E" }} />
           Libre
         </span>
         {CODES.map((code) => (
